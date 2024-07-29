@@ -36,7 +36,7 @@ class Bookings(Resource):
             setattr(booking, key, value)
         db.session.commit()
         return booking.to_dict()
-api.add_resource(Booking, '/api/bookings/<int:booking_id>')
+
 
 class User(Resource):
     def get(self, user_id):
@@ -56,10 +56,43 @@ class User(Resource):
         db.session.delete(user)
         db.session.commit()
         return user.to_dict()
+    
 
+
+class Payments(Resource):
+    def get(self, payment_id):
+        payment = Payment.query.get(payment_id).first()
+        return payment.to_dict()
+
+    def put(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(payment, key, value)
+        db.session.commit()
+        return payment.to_dict()
+
+    def delete(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        db.session.delete(payment)
+        db.session.commit()
+        return payment.to_dict()
+
+    def patch(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(payment, key, value)
+        db.session.commit()
+        return payment.to_dict()
+    
+
+
+
+    
+api.add_resource(Payments, '/api/payments/<int:payment_id>')
 api.add_resource(User, '/api/users/<int:user_id>')
-
-
+api.add_resource(Booking, '/api/bookings/<int:booking_id>')
 
 
 
