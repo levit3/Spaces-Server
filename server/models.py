@@ -31,7 +31,7 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
 ##Spaces
-class Spaces(db.Model, SerializerMixin):
+class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -59,8 +59,22 @@ class Spaces(db.Model, SerializerMixin):
 
 #Bookings
 
-
-
+class Booking(db.Model,SerializerMixin):
+    __tablename__ = 'bookings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'))
+    booking_id = db.Column(db.Integer,nullable=False)
+    start_date = db.Column(db.Date, nullable=False)
+    end_date = db.Column(db.Date, nullable=False)
+    total_price = db.Column(db.Float, nullable=False)
+    status = db.Column(db.String, nullable=False)
+    created_at = db.Column(db.Date, nullable=False)
+    updated_at = db.Column(db.Date, nullable=False)
+    
+    space = db.relationship('Spaces', back_populates='bookings')
+    user = db.relationship('User', back_populates='bookings')
 
 
 
