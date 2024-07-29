@@ -6,6 +6,7 @@ from sqlalchemy import Column, Integer, String, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
+import re
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import func
 from config import db, bcrypt
@@ -29,11 +30,13 @@ class User(Base):
     
 
     def __repr__(self):
-        return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
+        return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"      
+
 ##Spaces
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
-
+    
+    serialize_rules = ('-user.spaces', '-bookings.space', '-reviews.space')
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
@@ -43,9 +46,13 @@ class Space(db.Model, SerializerMixin):
     image_url = db.Column(db.String, nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     tenant = db.relationship('User', back_populates = 'spaces')
+    bookings = db.relationship('Booking', back_populates ='space')
+    reviews = db.relationship('Review', back_populates ='space')
+
 
     def __repr__(self):
         return f'<Space {self.title}, {self.description}>'
+
  
 
 
