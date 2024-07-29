@@ -2,13 +2,10 @@ from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import validates
 from sqlalchemy.ext.hybrid import hybrid_property
-<<<<<<< HEAD
-=======
 from sqlalchemy import Column, Integer, String, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
->>>>>>> c6ee01b9c2ec553b397f38ad7fdf3d62ff8b9f7a
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import func
 from config import db, bcrypt
@@ -34,7 +31,7 @@ class User(Base):
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
 ##Spaces
-class Spaces(db.Model, SerializerMixin):
+class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
 
     id = db.Column(db.Integer, primary_key=True)
