@@ -92,9 +92,9 @@ class Space(db.Model, SerializerMixin):
 
     def __repr__(self):
         return f'<Space {self.title}, {self.description}>'
+    
 
 #Bookings
-
 class Booking(db.Model,SerializerMixin):
     __tablename__ = 'bookings'
     
@@ -109,27 +109,12 @@ class Booking(db.Model,SerializerMixin):
     created_at = db.Column(db.Date, nullable=False)
     updated_at = db.Column(db.Date, nullable=False)
     
-    space = db.relationship('Space', back_populates='bookings')
+   
     serialize_rules=["-space.bookings","-user.bookings","-payment,booking"]
     
     space = db.relationship('Space', back_populates='bookings')
     user = db.relationship('User', back_populates='bookings')
     payments=db.relationship('Payment', back_populates='booking')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #Reviews
 class Review(db.Model, SerializerMixin):
@@ -178,13 +163,6 @@ class Review(db.Model, SerializerMixin):
     return comment
   
 
-
-
-
-
-
-
-
 #Payments
 class Payment(db.Model, SerializerMixin):
     __tablename__ = 'payments'
@@ -208,3 +186,8 @@ class Payment(db.Model, SerializerMixin):
         if not booking:
             raise ValueError('Booking does not exist')
         return booking_id
+    @validates('amount')
+    def validate_amount(self, key, amount):
+        if amount < 0:
+            raise ValueError('Amount must be greater than 0')
+        return amount
