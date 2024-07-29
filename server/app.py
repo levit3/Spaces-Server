@@ -118,6 +118,13 @@ class UserByID(Resource):
     
 
 
+class Reviews(Resource):
+    def get(self):
+        review = Review.query.all()
+        return review.to_dict()
+    
+
+
 class Payments(Resource):
     @token_required      
     def get(self):
