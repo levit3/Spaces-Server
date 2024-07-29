@@ -86,6 +86,59 @@ class Payments(Resource):
         db.session.commit()
         return payment.to_dict()
     
+
+class Spaces(Resource):
+    def get(self):
+      spaces = Space.query.all()
+      space_data = [space.to_dict() for space in spaces]
+      return make_response(jsonify(space_data), 200)
+
+class Space(Resource):
+    def get(self, space_id):
+        space = Space.query.get(space_id)
+        return [space.to_dict()]
+
+    def post(self):
+        data = request.get_json()
+        title = data.get('username')
+        description = data.get('email')
+        location = data.get('password')
+        price_per_hour = data.get('balance')
+        status = data.get('status')
+        
+        space = Space(
+          title=title,
+          description=description,
+          location=location,
+          price_per_hour=price_per_hour,
+          status=status,
+        )
+        db.session.add(space)
+        db.session.commit()
+        return space.to_dict()
+
+    def put(self, space_id):
+        space = Space.query.get(space_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(space, key, value)
+        db.session.commit()
+        return space.to_dict()
+
+    def delete(self, space_id):
+       space = Space.query.get(space_id)
+       db.session.delete(space)
+       db.session.commit()
+       return space.to_dict()
+
+    def patch(self, space_id):
+     space = Space.query.get(space_id)
+     data = request.get_json()
+     for key, value in data.items():
+        setattr(space, key, value)
+     db.session.commit()
+     return space.to_dict()
+    
 class Login(Resource):
     
     def post(self):
@@ -119,6 +172,7 @@ api.add_resource(Booking, '/api/bookings/<int:booking_id>')
 # api.add_resource(Reviews, '/api/reviews/<int:review_id>')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
+api.add_resource(Spaces, '/api/spaces>')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)
