@@ -19,7 +19,7 @@ class UserRole(enum.Enum):
     USER = "user"
     TENANT = "tenant"
 
-class User(Base):
+class User(Base, SerializerMixin, db.Model):
     __tablename__ = 'users'
 
     serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user']
