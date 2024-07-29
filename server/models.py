@@ -10,6 +10,7 @@ from datetime import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import func
 from config import db, bcrypt
+import re
 
 ##Users
 
@@ -32,6 +33,45 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
+<<<<<<< HEAD
+      
+    
+=======
+    
+    @hybrid_property
+    def password(self):
+      return self._password
+
+    @password.setter
+    def password(self, password):
+        if (
+        len(password) < 8 or
+        not re.search(r"[A-Z]", password) or
+        not re.search(r"[a-z]", password) or
+        not re.search(r"[0-9]", password) or
+        not re.search(r"[\W_]", password)
+    ):
+            raise ValueError(
+            'Password MUST be at least 8 digits, include uppercase, lowercase, numbers & special characters.'
+        )
+
+        password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
+        self._password = password_hash.decode('utf-8')
+
+def authenticate(self, password):
+    return bcrypt.check_password_hash(self._password, password.encode('utf-8'))
+
+@validates('email')
+def validate_email(self, key, email):
+  if not re.match(r"[^@]+@[^@]+.[^@]+", email):
+                raise ValueError('Invalid email address')
+  existing_email = User.query.filter_by(email=email).first()
+  if existing_email:
+    raise ValueError('Email already exists')
+  return email
+
+
+>>>>>>> b39e1ea26204e6fccb754dab81e82f8baed0c92b
 ##Spaces
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
@@ -48,16 +88,6 @@ class Space(db.Model, SerializerMixin):
 
     def __repr__(self):
         return f'<Space {self.title}, {self.description}>'
- 
-
-
-
-
-
-
-
-
-
 
 #Bookings
 
@@ -104,6 +134,10 @@ class Review(db.Model, SerializerMixin):
   user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
   space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
   date = db.Column(db.Date, server_default=func.current_date())
+  
+  space = db.relationship('Space', back_populates='reviews')
+  user = db.relationship('User', back_populates='reviews')
+
   
   def __repr__(self):
     return f'<Review {self.rating}, {self.comment}>, {self.user_id}>, {self.space_id}>'
