@@ -76,7 +76,7 @@ def validate_email(self, key, email):
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
     
-    serialize_rules = ('-user.spaces', '-bookings.space', '-reviews.space')
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space']
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
