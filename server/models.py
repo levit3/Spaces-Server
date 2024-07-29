@@ -21,15 +21,20 @@ class UserRole(enum.Enum):
 
 class User(Base):
     __tablename__ = 'users'
+
+    serialize_rules = ['-spaces.user, -reviews.user, -bookings.user']
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
-    password = db.Column(db.String, nullable=False)
+    _password = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
     profile_picture = db.Column(db.String)
     role = db.Column(db.Enum(UserRole), nullable=False)
     spaces = db.relationship("Space", back_populates = 'user')
-    
+    reviews = db.relationship("Review", back_populates = 'user')
+    bookings = db.relationship("Booking", back_populates = 'user')
+    payments = association_proxy('bookings','payments')
+
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
