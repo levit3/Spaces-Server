@@ -101,7 +101,6 @@ class Booking(db.Model,SerializerMixin):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'))
-    booking_id = db.Column(db.Integer,nullable=False)
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
