@@ -160,7 +160,17 @@ class Review(db.Model, SerializerMixin):
             raise ValueError('Comment must be at least 5 characters long')
         return comment
 
-
+class ReviewImage(db.Model, SerializerMixin):
+    __tablename__ = 'review_images'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    review_id = db.Column(db.Integer, db.ForeignKey('reviews.id'), nullable=False)
+    image_url = db.Column(db.String, nullable=False) 
+    
+    review = db.relationship('Review', back_populates='images')
+    
+    def __repr__(self):
+        return f'<ReviewImage {self.image_url}>'
 
 
 #Payments
