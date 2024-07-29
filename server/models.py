@@ -31,6 +31,8 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
+      
+    
 ##Spaces
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
@@ -103,6 +105,10 @@ class Review(db.Model, SerializerMixin):
   user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
   space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
   date = db.Column(db.Date, server_default=func.current_date())
+  
+  space = db.relationship('Space', back_populates='reviews')
+  user = db.relationship('User', back_populates='reviews')
+
   
   def __repr__(self):
     return f'<Review {self.rating}, {self.comment}>, {self.user_id}>, {self.space_id}>'
