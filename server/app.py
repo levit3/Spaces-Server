@@ -308,6 +308,8 @@ class Logout(Resource):
     
 api.add_resource(Payments, '/api/payments')
 api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
+api.add_resource(Reviews, '/api/reviews')
+api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
 api.add_resource(User, '/api/users')
 api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')

@@ -116,50 +116,52 @@ class Booking(db.Model,SerializerMixin):
 
 #Reviews
 class Review(db.Model, SerializerMixin):
-  __tablename__ = 'reviews'
+    __tablename__ = 'reviews'
+    
+    serialize_rules = ['-space.reviews', '-user.reviews']
+    
+    id = db.Column(db.Integer, primary_key=True)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.String(1000), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    date = db.Column(db.Date, server_default=func.current_date())
+    
+    images = relationship('ReviewImage', back_populates='review', cascade='all, delete-orphan')
+    space = db.relationship('Space', back_populates='reviews')
+    user = db.relationship('User', back_populates='reviews')
   
-  serialize_rules = ['-space.reviews','-user.reviews',]
+    def __repr__(self):
+        return f'<Review {self.rating}, {self.comment}, {self.user_id}, {self.space_id}>'
   
-  id = db.Column(db.Integer, primary_key=True)
-  rating = db.Column(db.Integer, nullable=False)
-  comment = db.Column(db.String(1000), nullable=False)
-  user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-  space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
-  date = db.Column(db.Date, server_default=func.current_date())
+    @validates('rating')
+    def validate_rating(self, key, rating):
+        if not (1 <= rating <= 5):
+            raise ValueError('Rating must be between 1 and 5')
+        return rating
   
-  space = db.relationship('Space', back_populates='reviews')
-  user = db.relationship('User', back_populates='reviews')
+    @validates('user_id')
+    def validate_user_id(self, key, user_id):
+        user = User.query.get(user_id)
+        if not user:
+            raise ValueError('User does not exist')
+        return user_id
+  
+    @validates('space_id')
+    def validate_space_id(self, key, space_id):
+        space = Space.query.get(space_id)
+        if not space:
+            raise ValueError('Space does not exist')
+        return space_id
+  
+    @validates('comment')
+    def validate_comment(self, key, comment):
+        if len(comment) < 5:
+            raise ValueError('Comment must be at least 5 characters long')
+        return comment
 
-  
-  def __repr__(self):
-    return f'<Review {self.rating}, {self.comment}>, {self.user_id}>, {self.space_id}>'
-  
-  @validates('rating')
-  def validate_rating(self, key, rating):
-    if not (5 >= int(rating) >= 0):
-      raise ValueError('Rating must be between 1 and 5')
-    return rating
-  
-  @validates('user_id')
-  def validate_user_id(self, key, user_id):
-    user = User.query.get(user_id).first()
-    if not user:
-      raise ValueError('User does not exist')
-    return user_id
-  
-  @validates('space_id')
-  def validate_space_id(self, key, space_id):
-    space = Space.query.get(space_id).first()
-    if not space:
-      raise ValueError('Space does not exist')
-    return space_id
-  
-  @validates('comment')
-  def validate_comment(self, key, comment):
-    if len(comment) < 5:
-      raise ValueError('Comment must be at least 5 characters long')
-    return comment
-  
+
+
 
 #Payments
 class Payment(db.Model, SerializerMixin):
