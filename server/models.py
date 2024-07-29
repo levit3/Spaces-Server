@@ -109,7 +109,7 @@ class Booking(db.Model,SerializerMixin):
     created_at = db.Column(db.Date, nullable=False)
     updated_at = db.Column(db.Date, nullable=False)
     
-    space = db.relationship('Space', back_populates='bookings')
+   
     serialize_rules=["-space.bookings","-user.bookings","-payment,booking"]
     
     space = db.relationship('Space', back_populates='bookings')
