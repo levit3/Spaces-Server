@@ -2,6 +2,8 @@ from sqlalchemy_serializer import SerializerMixin
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import validates
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import func
+from config import db, bcrypt
 ##Users
 
 
@@ -18,7 +20,7 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 
 ##Spaces
-class Spaces(db.Model, SerializerMixin):
+class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
 
     id = db.Column(db.Integer, primary_key=True)
