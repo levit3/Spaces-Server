@@ -37,3 +37,30 @@ class Bookings(Resource):
         db.session.commit()
         return booking.to_dict()
 api.add_resource(Booking, '/api/bookings/<int:booking_id>')
+
+class User(Resource):
+    def get(self, user_id):
+        user = User.query.get(user_id).first()
+        return user.to_dict()
+    
+    def put(self, user_id):
+        user = User.query.get(user_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(user, key, value)
+        db.session.commit()
+        return user.to_dict()
+
+    def delete(self, user_id):
+        user = User.query.get(user_id)
+        db.session.delete(user)
+        db.session.commit()
+        return user.to_dict()
+
+api.add_resource(User, '/api/users/<int:user_id>')
+
+
+
+
+
+  
