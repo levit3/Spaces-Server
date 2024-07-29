@@ -26,7 +26,7 @@ class User(Base):
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
-    password = db.Column(db.String, nullable=False)
+    _password = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
     profile_picture = db.Column(db.String)
     role = db.Column(db.Enum(UserRole), nullable=False)
@@ -38,10 +38,6 @@ class User(Base):
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
-<<<<<<< HEAD
-      
-    
-=======
     
     @hybrid_property
     def password(self):
@@ -76,7 +72,6 @@ def validate_email(self, key, email):
   return email
 
 
->>>>>>> b39e1ea26204e6fccb754dab81e82f8baed0c92b
 ##Spaces
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
