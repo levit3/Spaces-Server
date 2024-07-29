@@ -73,9 +73,9 @@ class Booking(db.Model,SerializerMixin):
     created_at = db.Column(db.Date, nullable=False)
     updated_at = db.Column(db.Date, nullable=False)
     
-    space = db.relationship('Spaces', back_populates='bookings')
+    space = db.relationship('Space', back_populates='bookings')
     user = db.relationship('User', back_populates='bookings')
-
+    payments=db.relationship('Payment', back_populates='booking')
 
 
 
