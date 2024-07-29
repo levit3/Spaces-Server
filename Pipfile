@@ -15,6 +15,7 @@ faker = "*"
 bcrypt-flask = "*"
 sqlalchemy-serializer = "*"
 psycopg2-binary = "*"
+jwt = "*"
 
 [dev-packages]
 
