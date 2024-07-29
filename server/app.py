@@ -123,7 +123,64 @@ class Reviews(Resource):
         review = Review.query.all()
         return review.to_dict()
     
+class ReviewByID(Resource):
+    @token_required
+    def get(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        return review.to_dict(), 200
+    
+    @token_required
+    def put(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        data = request.form
+        images = request.files.getlist('images')  
+        
+        try:
+            
+            for key, value in data.items():
+                setattr(review, key, value)
+            
+            
+            if images:
+                for image in images:
+                    upload_result = cloudinary.uploader.upload(image)
+                    review_image = ReviewImage(image_url=upload_result['url'])
+                    review.images.append(review_image)
 
+            db.session.commit()
+            return review.to_dict(), 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
+
+    @token_required
+    def delete(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        db.session.delete(review)
+        db.session.commit()
+        return {'message': 'Review deleted'}, 200
+    
+    @token_required
+    def patch(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        data = request.form
+        images = request.files.getlist('images') 
+        
+        try:
+            
+            for key, value in data.items():
+                setattr(review, key, value)
+            
+            
+            if images:
+                for image in images:
+                    upload_result = cloudinary.uploader.upload(image)
+                    review_image = ReviewImage(image_url=upload_result['url'])
+                    review.images.append(review_image)
+
+            db.session.commit()
+            return review.to_dict(), 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
 class Payments(Resource):
     @token_required      
