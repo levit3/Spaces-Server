@@ -83,7 +83,6 @@ class Space(db.Model, SerializerMixin):
     location = db.Column(db.String, nullable=False)
     price_per_hour = db.Column(db.Float, nullable=False)
     status = db.Column(db.String, nullable=False)
-    image_url = db.Column(db.String, nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     tenant = db.relationship('User', back_populates = 'spaces')
     bookings = db.relationship('Booking', back_populates ='space')
