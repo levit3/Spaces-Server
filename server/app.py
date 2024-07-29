@@ -6,8 +6,18 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 from config import app, db, api
-from models import User, Review, Space, Payment ,Booking
+from models import User, Review, Space, Payment ,Booking, ReviewImage
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
+
+
+cloudinary.config(
+  cloud_name = 'dzqt3usfp',
+  api_key = '618183139173486',
+  api_secret = '6oUAsFqSzho3xOjxebi3SIUps9U'
+)
 
 app.route('/')
 def index():
@@ -107,6 +117,70 @@ class UserByID(Resource):
         return user.to_dict()
     
 
+
+class Reviews(Resource):
+    def get(self):
+        review = Review.query.all()
+        return review.to_dict()
+    
+class ReviewByID(Resource):
+    @token_required
+    def get(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        return review.to_dict(), 200
+    
+    @token_required
+    def put(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        data = request.form
+        images = request.files.getlist('images')  
+        
+        try:
+            
+            for key, value in data.items():
+                setattr(review, key, value)
+            
+            
+            if images:
+                for image in images:
+                    upload_result = cloudinary.uploader.upload(image)
+                    review_image = ReviewImage(image_url=upload_result['url'])
+                    review.images.append(review_image)
+
+            db.session.commit()
+            return review.to_dict(), 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
+
+    @token_required
+    def delete(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        db.session.delete(review)
+        db.session.commit()
+        return {'message': 'Review deleted'}, 200
+    
+    @token_required
+    def patch(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        data = request.form
+        images = request.files.getlist('images') 
+        
+        try:
+            
+            for key, value in data.items():
+                setattr(review, key, value)
+            
+            
+            if images:
+                for image in images:
+                    upload_result = cloudinary.uploader.upload(image)
+                    review_image = ReviewImage(image_url=upload_result['url'])
+                    review.images.append(review_image)
+
+            db.session.commit()
+            return review.to_dict(), 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
 class Payments(Resource):
     @token_required      
@@ -234,6 +308,8 @@ class Logout(Resource):
     
 api.add_resource(Payments, '/api/payments')
 api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
+api.add_resource(Reviews, '/api/reviews')
+api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
 api.add_resource(User, '/api/users')
 api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')
