@@ -22,7 +22,7 @@ class UserRole(enum.Enum):
 class User(Base):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user','-reviews.user', '-bookings.user']
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user']
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
@@ -75,7 +75,8 @@ def validate_email(self, key, email):
 ##Spaces
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
-
+    
+    serialize_rules = ('-user.spaces', '-bookings.space', '-reviews.space')
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
@@ -85,6 +86,9 @@ class Space(db.Model, SerializerMixin):
     image_url = db.Column(db.String, nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     tenant = db.relationship('User', back_populates = 'spaces')
+    bookings = db.relationship('Booking', back_populates ='space')
+    reviews = db.relationship('Review', back_populates ='space')
+
 
     def __repr__(self):
         return f'<Space {self.title}, {self.description}>'
@@ -194,3 +198,10 @@ class Payment(db.Model, SerializerMixin):
     
     def __repr__(self):
         return f"<Payment(id={self.id}, booking_id={self.booking_id}, amount={self.amount}, payment_method='{self.payment_method}', payment_status='{self.payment_status}', created_at={self.created_at})>"
+    
+    @validates('booking_id')
+    def validate_booking_id(self, key, booking_id):
+        booking = Booking.query.get(booking_id).first()
+        if not booking:
+            raise ValueError('Booking does not exist')
+        return booking_id
