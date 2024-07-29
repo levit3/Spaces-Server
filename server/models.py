@@ -157,3 +157,10 @@ class Payment(db.Model, SerializerMixin):
     
     def __repr__(self):
         return f"<Payment(id={self.id}, booking_id={self.booking_id}, amount={self.amount}, payment_method='{self.payment_method}', payment_status='{self.payment_status}', created_at={self.created_at})>"
+    
+    @validates('booking_id')
+    def validate_booking_id(self, key, booking_id):
+        booking = Booking.query.get(booking_id).first()
+        if not booking:
+            raise ValueError('Booking does not exist')
+        return booking_id
