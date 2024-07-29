@@ -16,6 +16,7 @@ bcrypt-flask = "*"
 sqlalchemy-serializer = "*"
 psycopg2-binary = "*"
 jwt = "*"
+cloudinary = "*"
 
 [dev-packages]
 
