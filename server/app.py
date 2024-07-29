@@ -6,8 +6,18 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 from config import app, db, api
-from models import User, Review, Space, Payment ,Booking
+from models import User, Review, Space, Payment ,Booking, ReviewImage
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
+
+
+cloudinary.config(
+  cloud_name = 'dzqt3usfp',
+  api_key = '618183139173486',
+  api_secret = '6oUAsFqSzho3xOjxebi3SIUps9U'
+)
 
 app.route('/')
 def index():
