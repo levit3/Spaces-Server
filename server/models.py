@@ -22,7 +22,7 @@ class UserRole(enum.Enum):
 class User(Base):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user, -reviews.user, -bookings.user']
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user']
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
@@ -109,7 +109,7 @@ class Booking(db.Model,SerializerMixin):
     created_at = db.Column(db.Date, nullable=False)
     updated_at = db.Column(db.Date, nullable=False)
     
-    space = db.relationship('Spaces', back_populates='bookings')
+    space = db.relationship('Space', back_populates='bookings')
     user = db.relationship('User', back_populates='bookings')
 
 
@@ -131,6 +131,8 @@ class Booking(db.Model,SerializerMixin):
 #Reviews
 class Review(db.Model, SerializerMixin):
   __tablename__ = 'reviews'
+  
+  serialize_rules = ['-space.reviews','-user.reviews',]
   
   id = db.Column(db.Integer, primary_key=True)
   rating = db.Column(db.Integer, nullable=False)
@@ -192,6 +194,7 @@ class Payment(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     booking = db.relationship("Booking", back_populates="payments")
+    user = association_proxy('booking', 'user')
     
     def __repr__(self):
         return f"<Payment(id={self.id}, booking_id={self.booking_id}, amount={self.amount}, payment_method='{self.payment_method}', payment_status='{self.payment_status}', created_at={self.created_at})>"
