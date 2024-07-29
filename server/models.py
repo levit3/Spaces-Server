@@ -22,7 +22,7 @@ class UserRole(enum.Enum):
 class User(Base):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user, -reviews.user, -bookings.user']
+    serialize_rules = ['-spaces.user','-reviews.user', '-bookings.user']
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
@@ -128,7 +128,7 @@ class Booking(db.Model,SerializerMixin):
 class Review(db.Model, SerializerMixin):
   __tablename__ = 'reviews'
   
-  serialize_rules = ['-space.reviews, -user.reviews',]
+  serialize_rules = ['-space.reviews','-user.reviews',]
   
   id = db.Column(db.Integer, primary_key=True)
   rating = db.Column(db.Integer, nullable=False)
