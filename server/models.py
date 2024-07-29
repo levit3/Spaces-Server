@@ -22,7 +22,7 @@ class UserRole(enum.Enum):
 class User(Base):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user, -reviews.user, -bookings.user']
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user']
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
