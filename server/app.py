@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from flask import request, make_response
+from flask import request, make_response, session
 from flask_restful import Resource
 
 from config import app, db, api
@@ -86,13 +86,42 @@ class Payments(Resource):
         db.session.commit()
         return payment.to_dict()
     
+class Login(Resource):
+    
+    def post(self):
 
+        request_json = request.get_json()
 
+        username = request_json.get('username')
+        password = request_json.get('password')
 
+        user = User.query.filter(User.username == username).first()
+
+        if user:
+            if user.authenticate(password):
+
+                session['user_id'] = user.id
+                return user.to_dict(), 200
+
+        return {'error': '401 Unauthorized'}, 401
+
+class Logout(Resource):
+
+    def delete(self):
+
+        session['user_id'] = None
+        
+        return {}, 204
     
 api.add_resource(Payments, '/api/payments/<int:payment_id>')
 api.add_resource(User, '/api/users/<int:user_id>')
 api.add_resource(Booking, '/api/bookings/<int:booking_id>')
+# api.add_resource(Reviews, '/api/reviews/<int:review_id>')
+api.add_resource(Login, '/api/login')
+api.add_resource(Logout, '/api/logout')
+
+if __name__ == '__main__':
+    app.run(port= 5555, debug=True)
 
 
 
