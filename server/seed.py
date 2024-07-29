@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from app import app
-from models import User, Review, Space, Payment
+from models import User, Review, Space, Payment, Booking
 from faker import Faker
 fake = Faker()
 
