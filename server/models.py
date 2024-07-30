@@ -6,7 +6,6 @@ from sqlalchemy import Column, Integer, String, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
-from datetime import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import func
 from config import db, bcrypt
@@ -197,7 +196,7 @@ class Payment(db.Model, SerializerMixin):
     amount = db.Column(db.Integer, nullable=False)
     payment_method = db.Column(db.String, nullable=False)
     payment_status = db.Column(db.String, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, server_default=func.current_date())
     
     booking = db.relationship("Booking", back_populates="payments")
     user = association_proxy('booking', 'user')
