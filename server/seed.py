@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from app import app
-from models import User, Review, Space, Payment, Booking
+from models import User, Review, Space, Payment, Booking,ReviewImage, SpaceImages
 from faker import Faker
 from config import db
 from random import randint, choice, sample as rc
@@ -17,28 +17,18 @@ if __name__ == '__main__':
 
 #Create user data
 for _ in range(100):
-    user = User(name=fake.name(), email=fake.email(), password=fake.password(length=10), role =rc(["user", "tenant"]), profile_picture="")
+    user = User(name=fake.name(), email=fake.email(), password=fake.password(length=10), role =rc(["user", "tenant"]), profile_picture="https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
     db.session.add(user)
     db.session.commit()
+print("User data seeding completed successfully")
 
 #Create space data
 for _ in range(50):
-    space = Space(title=fake.company(), description=fake.text(max_nb_chars=200), location=fake.city(), price_per_hour=randint(10, 300), status=rc(["available", "unavailable"]), image_url=fake.image_url(), tenant_id=choice(range(1, 11)))
+    space = Space(title=fake.company(), description=fake.text(max_nb_chars=200), location=fake.city(), price_per_hour=randint(10, 300), status=rc(["available", "unavailable"]), tenant_id=choice(range(1, 100)))
     db.session.add(space)
     db.session.commit()
+print("Space data seeded successfully")
 
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'))
-    booking_id = db.Column(db.Integer,nullable=False)
-    start_date = db.Column(db.Date, nullable=False)
-    end_date = db.Column(db.Date, nullable=False)
-    total_price = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String, nullable=False)
-    created_at = db.Column(db.Date, nullable=False)
-    updated_at = db.Column(db.Date, nullable=False)
-    
-   
 #Create booking data
 for _ in range(1000):
     user_id = choice(range(1, 100))
@@ -66,9 +56,8 @@ for _ in range(1000):
     )
 
     db.session.add(booking)
-
-db.session.commit()
-
+    db.session.commit()
+print("Booking data seeded successfully")
 
 #Create payment data
 for _ in range(500):
@@ -88,7 +77,7 @@ for _ in range(500):
 
     db.session.add(payment)
     db.session.commit()
-
+print("Payment data seeded successfully")
 
 #Create reviews data
 for _ in range(2000):
@@ -108,3 +97,37 @@ for _ in range(2000):
 
       db.session.add(review)
       db.session.commit()
+print("Review data seeded successfully")
+
+
+#Create review images data
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+print("Review images seeded successfully")
+#Create space images data
+
+
+
+
+
+
+
+
+
+
+
+
+
+print("Space images seeded successfully")
