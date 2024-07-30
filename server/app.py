@@ -86,9 +86,8 @@ class Users(Resource):
     
 
 class UserByID(Resource):
-    @token_required      
     def get(self, user_id):
-        user = User.query.get(user_id).first()
+        user = User.query.get(user_id)
         return user.to_dict()
     
     @token_required      
@@ -323,7 +322,7 @@ api.add_resource(Payments, '/api/payments')
 api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
 api.add_resource(Reviews, '/api/reviews')
 api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
-api.add_resource(User, '/api/users')
+api.add_resource(Users, '/api/users')
 api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')
 api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
