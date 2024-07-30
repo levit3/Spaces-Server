@@ -114,17 +114,15 @@ for _ in range(2000):
 
 print("Review images seeded successfully")
 #Create space images data
-
-
-
-
-
-
-
-
-
-
-
+for _ in range(50):
+    space_id = choice(range(1, 50))
+    image_url = fake.image_url()
+    space_image = SpaceImages(
+        space_id=space_id,
+        image_url=image_url
+    )
+    db.session.add(space_image)
+    db.session.commit()
 
 
 print("Space images seeded successfully")
