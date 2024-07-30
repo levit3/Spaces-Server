@@ -20,8 +20,8 @@ class UserRole(enum.Enum):
 class User( SerializerMixin, db.Model):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user','-payments.payments']
-    
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.payments', '-spaces.reviews', '-reviews.space.user']
+       
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
     _password = db.Column(db.String, nullable=False)
@@ -76,7 +76,7 @@ class User( SerializerMixin, db.Model):
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
     
-    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space']
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user']
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
@@ -86,7 +86,6 @@ class Space(db.Model, SerializerMixin):
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     user = db.relationship('User', back_populates = 'spaces')
-    bookings = db.relationship('Booking', back_populates ='space')
     reviews = db.relationship('Review', back_populates ='space')
     images = db.relationship('SpaceImages', back_populates='space')
     space_images = db.relationship('SpaceImages', back_populates='space')
@@ -125,7 +124,6 @@ class Booking(db.Model,SerializerMixin):
    
     serialize_rules=["-space.bookings","-user.bookings","-payment,booking"]
     
-    space = db.relationship('Space', back_populates='bookings')
     user = db.relationship('User', back_populates='bookings')
     payments=db.relationship('Payment', back_populates='booking')
 
@@ -133,7 +131,7 @@ class Booking(db.Model,SerializerMixin):
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
     
-    serialize_rules = ['-space.reviews', '-user.reviews']
+    serialize_rules = ['-space.reviews', '-user.reviews', '-space.user']
     
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
@@ -154,13 +152,6 @@ class Review(db.Model, SerializerMixin):
         if not (1 <= rating <= 5):
             raise ValueError('Rating must be between 1 and 5')
         return rating
-  
-    # @validates('user_id')
-    # def validate_user_id(self, key, user_id):
-    #     user = User.query.get(user_id)
-    #     if not user:
-    #         raise ValueError('User does not exist')
-    #     return user_id
   
     @validates('space_id')
     def validate_space_id(self, key, space_id):
@@ -198,6 +189,8 @@ class Payment(db.Model, SerializerMixin):
     payment_method = db.Column(db.String, nullable=False)
     payment_status = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.current_date())
+    
+    serialize_rules = ['-booking.payments', '-booking.user.spaces']
     
     booking = db.relationship("Booking", back_populates="payments")
     user = association_proxy('booking', 'user')

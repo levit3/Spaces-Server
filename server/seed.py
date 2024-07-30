@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from app import app
-from models import User, Review, Space, Payment, Booking, ReviewImage, SpaceImages, UserRole
+from models import User, Review, Space, Payment, Booking, UserRole, ReviewImage, SpaceImages
 from faker import Faker
 from config import db
 from random import randint, choice, sample as rc
