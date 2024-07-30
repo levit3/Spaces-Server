@@ -1,21 +1,60 @@
 #!/usr/bin/env python3
-from flask import request, make_response, session
-from flask_restful import Resource 
+from flask import request, make_response, session, jsonify
+from flask_restful import Resource
+import jwt
+from functools import wraps
+from datetime import datetime, timedelta
 
 from config import app, db, api
-from models import User, Review, Space, Payment ,Booking
+from models import User, Review, Space, Payment ,Booking, ReviewImage
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 
+
+cloudinary.config(
+  cloud_name = 'dzqt3usfp',
+  api_key = '618183139173486',
+  api_secret = '6oUAsFqSzho3xOjxebi3SIUps9U'
+)
 
 app.route('/')
 def index():
     return "Welcome to Spaces."
 
+def token_required(func):
+    @wraps(func)
+    def decorator(*args, **kwargs):
+        if 'Authorization' not in request.headers:
+            return make_response('Authorization header is missing', 401)
+        token = request.headers.get('Authorization').split(' ')[1]
+        if not token:
+            return make_response('Token is missing', 401)
+        try:
+            data = jwt.decode(token, app.config['SECRET_KEY'])
+            current_user = User.query.get(data['id']).first()
+        except jwt.ExpiredSignatureError:
+            return make_response('Token expired', 401)
+        except jwt.InvalidTokenError:
+            return make_response('Invalid token', 401)
+
+        return func(current_user, *args, **kwargs)
+
+    return decorator
+
+
+
 class Bookings(Resource):
+    def get(self):
+        booking = Booking.query.all()
+        return booking.to_dict()
+    
+class BookingByID(Resource):
     def get(self, booking_id):
         booking = Booking.query.get(booking_id).first()
         return booking.to_dict()
-
+    
     def put(self, booking_id):
         booking = Booking.query.get(booking_id)
         data = request.get_json()
@@ -39,11 +78,20 @@ class Bookings(Resource):
         return booking.to_dict()
 
 
-class User(Resource):
+class Users(Resource):
+    @token_required
+    def get(self):
+        user = User.query.all()
+        return user.to_dict()
+    
+
+class UserByID(Resource):
+    @token_required      
     def get(self, user_id):
         user = User.query.get(user_id).first()
         return user.to_dict()
     
+    @token_required      
     def put(self, user_id):
         user = User.query.get(user_id)
         data = request.get_json()
@@ -52,19 +100,102 @@ class User(Resource):
         db.session.commit()
         return user.to_dict()
 
+    @token_required      
     def delete(self, user_id):
         user = User.query.get(user_id)
         db.session.delete(user)
         db.session.commit()
         return user.to_dict()
     
+    @token_required      
+    def patch(self, user_id):
+        user = User.query.get(user_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(user, key, value)
+        db.session.commit()
+        return user.to_dict()
+    
 
+
+class Reviews(Resource):
+    def get(self):
+        review = Review.query.all()
+        return review.to_dict()
+    
+class ReviewByID(Resource):
+    @token_required
+    def get(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        return review.to_dict(), 200
+    
+    @token_required
+    def put(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        data = request.form
+        images = request.files.getlist('images')  
+        
+        try:
+            
+            for key, value in data.items():
+                setattr(review, key, value)
+            
+            
+            if images:
+                for image in images:
+                    upload_result = cloudinary.uploader.upload(image)
+                    review_image = ReviewImage(image_url=upload_result['url'])
+                    review.images.append(review_image)
+
+            db.session.commit()
+            return review.to_dict(), 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
+
+    @token_required
+    def delete(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        db.session.delete(review)
+        db.session.commit()
+        return {'message': 'Review deleted'}, 200
+    
+    @token_required
+    def patch(self, review_id):
+        review = Review.query.get_or_404(review_id)
+        data = request.form
+        images = request.files.getlist('images') 
+        
+        try:
+            
+            for key, value in data.items():
+                setattr(review, key, value)
+            
+            
+            if images:
+                for image in images:
+                    upload_result = cloudinary.uploader.upload(image)
+                    review_image = ReviewImage(image_url=upload_result['url'])
+                    review.images.append(review_image)
+
+            db.session.commit()
+            return review.to_dict(), 200
+        except ValueError as e:
+            return {'error': str(e)}, 400
 
 class Payments(Resource):
+    @token_required      
+    def get(self):
+        payment = Payment.query.all()
+        return payment.to_dict()
+    
+    
+class PaymentByID(Resource):
+    @token_required      
     def get(self, payment_id):
         payment = Payment.query.get(payment_id).first()
         return payment.to_dict()
 
+    @token_required      
     def put(self, payment_id):
         payment = Payment.query.get(payment_id)
         data = request.get_json()
@@ -73,12 +204,14 @@ class Payments(Resource):
         db.session.commit()
         return payment.to_dict()
 
+    @token_required   
     def delete(self, payment_id):
         payment = Payment.query.get(payment_id)
         db.session.delete(payment)
         db.session.commit()
         return payment.to_dict()
 
+    @token_required
     def patch(self, payment_id):
         payment = Payment.query.get(payment_id)
         data = request.get_json()
@@ -94,11 +227,12 @@ class Spaces(Resource):
       space_data = [space.to_dict() for space in spaces]
       return make_response(jsonify(space_data), 200)
 
-class Space(Resource):
+class SpaceByID(Resource):
     def get(self, space_id):
         space = Space.query.get(space_id)
         return [space.to_dict()]
 
+    @token_required
     def post(self):
         data = request.get_json()
         title = data.get('username')
@@ -118,6 +252,7 @@ class Space(Resource):
         db.session.commit()
         return space.to_dict()
 
+    @token_required   
     def put(self, space_id):
         space = Space.query.get(space_id)
         data = request.get_json()
@@ -126,12 +261,14 @@ class Space(Resource):
         db.session.commit()
         return space.to_dict()
 
+    @token_required   
     def delete(self, space_id):
        space = Space.query.get(space_id)
        db.session.delete(space)
        db.session.commit()
        return space.to_dict()
 
+    @token_required   
     def patch(self, space_id):
      space = Space.query.get(space_id)
      data = request.get_json()
@@ -153,11 +290,13 @@ class Login(Resource):
 
         if user:
             if user.authenticate(password):
-
                 session['user_id'] = user.id
-                return user.to_dict(), 200
+                token = jwt.encode({'id': user.id, 'expiration': str(datetime.utcnow()+timedelta(days=5))}, app.config['SECRET_KEY'])
+                return make_response({'user': user, 'token': token}, 200)
+            else:
+                return {'error': 'Invalid Password'}, 401
 
-        return {'error': '401 Unauthorized'}, 401
+        return {'error': 'Invalid Username'}, 401
 
 class Logout(Resource):
 
@@ -166,14 +305,32 @@ class Logout(Resource):
         session['user_id'] = None
         
         return {}, 204
-    
-api.add_resource(Payments, '/api/payments/<int:payment_id>')
-api.add_resource(User, '/api/users/<int:user_id>')
-api.add_resource(Booking, '/api/bookings/<int:booking_id>')
-# api.add_resource(Reviews, '/api/reviews/<int:review_id>')
+
+class CheckSession(Resource):
+ def get():
+    user_id = session.get('user_id')
+    if user_id:
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            return jsonify(user.to_dict()), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+    else:
+        return jsonify({"error": "Unauthorized"}), 401
+
+api.add_resource(CheckSession, '/api/check_session')   
+api.add_resource(Payments, '/api/payments')
+api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
+api.add_resource(Reviews, '/api/reviews')
+api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
+api.add_resource(User, '/api/users')
+api.add_resource(UserByID, '/api/users/<int:user_id>/')
+api.add_resource(Bookings, '/api/bookings')
+api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
+api.add_resource(Spaces, '/api/spaces>')
+api.add_resource(SpaceByID, '/api/spaces/<int:space_id>')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
-api.add_resource(Spaces, '/api/spaces>')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)

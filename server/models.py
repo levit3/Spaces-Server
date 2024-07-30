@@ -6,7 +6,6 @@ from sqlalchemy import Column, Integer, String, Enum
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
-from datetime import datetime
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy import func
 from config import db, bcrypt
@@ -84,14 +83,29 @@ class Space(db.Model, SerializerMixin):
     price_per_hour = db.Column(db.Float, nullable=False)
     status = db.Column(db.String, nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
     tenant = db.relationship('User', back_populates = 'spaces')
     bookings = db.relationship('Booking', back_populates ='space')
     reviews = db.relationship('Review', back_populates ='space')
 
+    images = db.relationship('SpaceImages', back_populates='space')
+
 
     def __repr__(self):
-        return f'<Space {self.title}, {self.description}>'
+        return f'<Space {self.title} description: {self.description}>'
     
+class SpaceImages(db.Model, SerializerMixin):
+    __tablename__ = 'space_images'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    image_url = db.Column(db.String, nullable=False) 
+    
+    space = db.relationship('Space', back_populates='space_images')
+    
+    def __repr__(self):
+        return f'<SpaceImage {self.image_url}>'
+
 
 #Bookings
 class Booking(db.Model,SerializerMixin):
@@ -116,50 +130,62 @@ class Booking(db.Model,SerializerMixin):
 
 #Reviews
 class Review(db.Model, SerializerMixin):
-  __tablename__ = 'reviews'
+    __tablename__ = 'reviews'
+    
+    serialize_rules = ['-space.reviews', '-user.reviews']
+    
+    id = db.Column(db.Integer, primary_key=True)
+    rating = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.String(1000), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    date = db.Column(db.Date, server_default=func.current_date())
+    
+    images = relationship('ReviewImage', back_populates='review', cascade='all, delete-orphan')
+    space = db.relationship('Space', back_populates='reviews')
+    user = db.relationship('User', back_populates='reviews')
   
-  serialize_rules = ['-space.reviews','-user.reviews',]
+    def __repr__(self):
+        return f'<Review {self.rating}, {self.comment}, {self.user_id}, {self.space_id}>'
   
-  id = db.Column(db.Integer, primary_key=True)
-  rating = db.Column(db.Integer, nullable=False)
-  comment = db.Column(db.String(1000), nullable=False)
-  user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-  space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
-  date = db.Column(db.Date, server_default=func.current_date())
+    @validates('rating')
+    def validate_rating(self, key, rating):
+        if not (1 <= rating <= 5):
+            raise ValueError('Rating must be between 1 and 5')
+        return rating
   
-  space = db.relationship('Space', back_populates='reviews')
-  user = db.relationship('User', back_populates='reviews')
+    @validates('user_id')
+    def validate_user_id(self, key, user_id):
+        user = User.query.get(user_id)
+        if not user:
+            raise ValueError('User does not exist')
+        return user_id
+  
+    @validates('space_id')
+    def validate_space_id(self, key, space_id):
+        space = Space.query.get(space_id)
+        if not space:
+            raise ValueError('Space does not exist')
+        return space_id
+  
+    @validates('comment')
+    def validate_comment(self, key, comment):
+        if len(comment) < 5:
+            raise ValueError('Comment must be at least 5 characters long')
+        return comment
 
-  
-  def __repr__(self):
-    return f'<Review {self.rating}, {self.comment}>, {self.user_id}>, {self.space_id}>'
-  
-  @validates('rating')
-  def validate_rating(self, key, rating):
-    if not (5 >= int(rating) >= 0):
-      raise ValueError('Rating must be between 1 and 5')
-    return rating
-  
-  @validates('user_id')
-  def validate_user_id(self, key, user_id):
-    user = User.query.get(user_id).first()
-    if not user:
-      raise ValueError('User does not exist')
-    return user_id
-  
-  @validates('space_id')
-  def validate_space_id(self, key, space_id):
-    space = Space.query.get(space_id).first()
-    if not space:
-      raise ValueError('Space does not exist')
-    return space_id
-  
-  @validates('comment')
-  def validate_comment(self, key, comment):
-    if len(comment) < 5:
-      raise ValueError('Comment must be at least 5 characters long')
-    return comment
-  
+class ReviewImage(db.Model, SerializerMixin):
+    __tablename__ = 'review_images'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    review_id = db.Column(db.Integer, db.ForeignKey('reviews.id'), nullable=False)
+    image_url = db.Column(db.String, nullable=False) 
+    
+    review = db.relationship('Review', back_populates='images')
+    
+    def __repr__(self):
+        return f'<ReviewImage {self.image_url}>'
+
 
 #Payments
 class Payment(db.Model, SerializerMixin):
@@ -170,7 +196,7 @@ class Payment(db.Model, SerializerMixin):
     amount = db.Column(db.Integer, nullable=False)
     payment_method = db.Column(db.String, nullable=False)
     payment_status = db.Column(db.String, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, server_default=func.current_date())
     
     booking = db.relationship("Booking", back_populates="payments")
     user = association_proxy('booking', 'user')
