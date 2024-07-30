@@ -84,14 +84,29 @@ class Space(db.Model, SerializerMixin):
     price_per_hour = db.Column(db.Float, nullable=False)
     status = db.Column(db.String, nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
     tenant = db.relationship('User', back_populates = 'spaces')
     bookings = db.relationship('Booking', back_populates ='space')
     reviews = db.relationship('Review', back_populates ='space')
 
+    images = db.relationship('SpaceImages', back_populates='space')
+
 
     def __repr__(self):
-        return f'<Space {self.title}, {self.description}>'
+        return f'<Space {self.title} description: {self.description}>'
     
+class SpaceImages(db.Model, SerializerMixin):
+    __tablename__ = 'space_images'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    image_url = db.Column(db.String, nullable=False) 
+    
+    space = db.relationship('Space', back_populates='space_images')
+    
+    def __repr__(self):
+        return f'<SpaceImage {self.image_url}>'
+
 
 #Bookings
 class Booking(db.Model,SerializerMixin):

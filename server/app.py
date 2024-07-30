@@ -305,7 +305,20 @@ class Logout(Resource):
         session['user_id'] = None
         
         return {}, 204
-    
+
+class CheckSession(Resource):
+ def get():
+    user_id = session.get('user_id')
+    if user_id:
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            return jsonify(user.to_dict()), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+    else:
+        return jsonify({"error": "Unauthorized"}), 401
+
+api.add_resource(CheckSession, '/api/check_session')   
 api.add_resource(Payments, '/api/payments')
 api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
 api.add_resource(Reviews, '/api/reviews')
