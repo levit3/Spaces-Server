@@ -183,10 +183,11 @@ class ReviewByID(Resource):
             return {'error': str(e)}, 400
 
 class Payments(Resource):
-    @token_required      
+    #@token_required      
     def get(self):
-        payment = Payment.query.all()
-        return payment.to_dict()
+        payments = Payment.query.all()
+        payment = [payment.to_dict() for payment in payments]
+        return payment
     
     
 class PaymentByID(Resource):
