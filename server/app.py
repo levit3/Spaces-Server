@@ -21,7 +21,7 @@ cloudinary.config(
 
 @app.route('/')
 def index():
-    return "<h1>Welcome to Spaces.</h1>"
+    return "Welcome to Spaces."
 
 def token_required(func):
     @wraps(func)
@@ -47,13 +47,12 @@ def token_required(func):
 
 class Bookings(Resource):
     def get(self):
-        bookings = Booking.query.all()
-        booking = [booking.to_dict() for booking in bookings]
-        return make_response(booking)
+        booking = Booking.query.all()
+        return booking.to_dict()
     
 class BookingByID(Resource):
     def get(self, booking_id):
-        booking = Booking.query.get(booking_id)
+        booking = Booking.query.get(booking_id).first()
         return booking.to_dict()
     
     def put(self, booking_id):

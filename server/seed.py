@@ -12,7 +12,14 @@ fake = Faker()
 
 
 if __name__ == '__main__':
+    fake = Faker()
     with app.app_context():
+        print("Starting seed...")
+
+        # Drop and recreate all tables
+        db.drop_all()
+        db.create_all()
+
     #Create user data
         for _ in range(200):
             user = User(name=fake.name(), email=fake.email(), password=fake.password(length=10), role =rc([UserRole.USER, UserRole.TENANT], k=1)[0], profile_picture="https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
@@ -33,8 +40,9 @@ if __name__ == '__main__':
             space_id = choice(range(1, 50))
             start_date = fake.date_this_year()
             end_date = fake.date_between(start_date=start_date, end_date="+1y")
-            start_datetime = datetime.strptime(str(start_date), '%Y-%m-%d')
-            end_datetime = datetime.strptime(str(end_date), '%Y-%m-%d')
+
+            start_datetime = datetime.combine(start_date, datetime.min.time())
+            end_datetime = datetime.combine(end_date, datetime.min.time())
             hours = (end_datetime - start_datetime).total_seconds() / 3600
             space = db.session.query(Space).get(space_id)
             total_price = hours * space.price_per_hour
