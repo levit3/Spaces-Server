@@ -101,18 +101,15 @@ print("Review data seeded successfully")
 
 
 #Create review images data
-
-
-
-
-
-
-
-
-
-
-
-
+for _ in range(2000):
+    review_id = choice(range(1, 2000))
+    image_url = fake.image_url()
+    review_image = ReviewImage(
+        review_id=review_id,
+        image_url=image_url
+    )
+    db.session.add(review_image)
+    db.session.commit()
 
 
 print("Review images seeded successfully")
