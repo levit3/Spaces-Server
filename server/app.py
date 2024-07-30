@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from flask import request, make_response, session, jsonify
 from flask_restful import Resource
+import cloudinary
 import jwt
 from functools import wraps
 from datetime import datetime, timedelta
 
 from config import app, db, api
 from models import User, Review, Space, Payment ,Booking, ReviewImage
-import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
@@ -19,9 +19,9 @@ cloudinary.config(
   api_secret = '6oUAsFqSzho3xOjxebi3SIUps9U'
 )
 
-app.route('/')
+@app.route('/')
 def index():
-    return "Welcome to Spaces."
+    return "<h1>Welcome to Spaces.</h1>"
 
 def token_required(func):
     @wraps(func)
@@ -47,12 +47,13 @@ def token_required(func):
 
 class Bookings(Resource):
     def get(self):
-        booking = Booking.query.all()
-        return booking.to_dict()
+        bookings = Booking.query.all()
+        booking = [booking.to_dict() for booking in bookings]
+        return make_response(booking)
     
 class BookingByID(Resource):
     def get(self, booking_id):
-        booking = Booking.query.get(booking_id).first()
+        booking = Booking.query.get(booking_id)
         return booking.to_dict()
     
     def put(self, booking_id):
@@ -79,16 +80,17 @@ class BookingByID(Resource):
 
 
 class Users(Resource):
-    @token_required
     def get(self):
-        user = User.query.all()
-        return user.to_dict()
+        users = User.query.all()
+        user = [user.to_dict() for user in users]
+        return make_response(user)
     
 
 class UserByID(Resource):
     def get(self, user_id):
-        user = User.query.get(user_id)
-        return user.to_dict()
+        user = User.query.filter_by(id = user_id).first()
+        print(user.to_dict())
+        return make_response(user.to_dict(), 200)
     
     @token_required      
     def put(self, user_id):
@@ -123,7 +125,6 @@ class Reviews(Resource):
         return review.to_dict()
     
 class ReviewByID(Resource):
-    @token_required
     def get(self, review_id):
         review = Review.query.get_or_404(review_id)
         return review.to_dict(), 200
@@ -189,9 +190,9 @@ class Payments(Resource):
     
     
 class PaymentByID(Resource):
-    @token_required      
+    # @token_required      
     def get(self, payment_id):
-        payment = Payment.query.get(payment_id).first()
+        payment = Payment.query.get(payment_id)
         return payment.to_dict()
 
     @token_required      
