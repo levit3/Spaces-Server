@@ -142,7 +142,7 @@ class Review(db.Model, SerializerMixin):
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
     date = db.Column(db.Date, server_default=func.current_date())
     
-    images = relationship('ReviewImage', back_populates='review', cascade='all, delete-orphan')
+    images = db.relationship('ReviewImage', back_populates='review', cascade='all, delete-orphan')
     space = db.relationship('Space', back_populates='reviews')
     user = db.relationship('User', back_populates='reviews')
   
