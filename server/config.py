@@ -6,11 +6,14 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from flask_bcrypt import Bcrypt
 import os
+import secrets
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = b'\x0e\xf3\xb5\xf8\xfe\xd5\x18\xcc\xbb\x99\xcc\xb17;N\xcb'
+def generate_secret_key():
+    return secrets.token_hex(32)
+app.config['SECRET_KEY'] = generate_secret_key()
 
 #Cloudinary config
 CLOUDINARY_CLOUD_NAME = os.getenv('CLOUDINARY_CLOUD_NAME', 'dzqt3usfp')
