@@ -35,22 +35,19 @@ def test_login(test_client):
     assert 'token' in response_data
 
 def test_protected_route_expired_token(test_client):
-    with app.app_context():
-        user = User.query.filter_by(name='testuser').first()
-        token = jwt.encode({
-            'id': user.id,
-            'exp': datetime.utcnow() - timedelta(days=1)  
-        }, app.config['SECRET_KEY'], algorithm="HS256")
+    user = User.query.filter_by(name='testuser').first()
+    token = jwt.encode({
+        'id': user.id,
+        'expiration': str(datetime.utcnow() - timedelta(days=1) ) 
+    }, app.config['SECRET_KEY'], algorithm="HS256")
+
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = test_client.get(f'/api/users/{user.id}', headers=headers)
+    print(f"Response data: {response.data}")
     
-        headers = {
-            'Authorization': f'Bearer {token}'
-        }
-        response = test_client.get(f'/api/users/{user.id}', headers=headers, follow_redirects=True)
-        
-        print(f"Final URL after redirects: {response.request.url}")
-        print(f"Response data: {response.data}")
-        
-        assert response.status_code == 401
+    assert response.status_code == 401
 
 def test_protected_route_invalid_token(test_client):
     headers = {
