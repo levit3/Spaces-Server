@@ -17,6 +17,7 @@ sqlalchemy-serializer = "*"
 psycopg2-binary = "*"
 jwt = "*"
 cloudinary = "*"
+pytest = "*"
 
 [dev-packages]
 

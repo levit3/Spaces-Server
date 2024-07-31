@@ -16,6 +16,7 @@ import re
 class UserRole(enum.Enum):
     USER = "user"
     TENANT = "tenant"
+    ADMIN = "admin"
 
 class User( SerializerMixin, db.Model):
     __tablename__ = 'users'
@@ -87,9 +88,6 @@ class Space(db.Model, SerializerMixin):
 
     user = db.relationship('User', back_populates = 'spaces')
     reviews = db.relationship('Review', back_populates ='space')
-
-    # images = db.relationship('SpaceImages', back_populates='space')
-
     space_images = db.relationship('SpaceImages', back_populates='space')
 
 
@@ -98,13 +96,13 @@ class Space(db.Model, SerializerMixin):
     
 class SpaceImages(db.Model, SerializerMixin):
     __tablename__ = 'space_images'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
-    image_url = db.Column(db.String, nullable=False) 
-    
+    image_url = db.Column(db.String, nullable=False)
+
     space = db.relationship('Space', back_populates='space_images')
-    
+
     def __repr__(self):
         return f'<SpaceImage {self.image_url}>'
 
