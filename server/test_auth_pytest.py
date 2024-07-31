@@ -29,6 +29,9 @@ def test_login(test_client):
         'name': 'testuser',
         'password': 'P@ssword123'
     })
+    assert response.status_code == 200
+    response_data = json.loads(response.data.decode('utf-8'))
+    assert 'token' in response_data
 def test_protected_route_expired_token(test_client):
     with app.app_context():
         user = User.query.filter_by(name='testuser').first()
