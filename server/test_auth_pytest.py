@@ -43,3 +43,10 @@ def test_protected_route_expired_token(test_client):
         
         assert response.status_code == 401
         assert b'Token expired' in response.data  
+        
+def test_protected_route_invalid_token(test_client):
+    headers = {
+        'Authorization': 'Bearer invalidtoken'
+    }
+    response = test_client.get('/api/users/1', headers=headers)
+    assert response.status_code == 401
