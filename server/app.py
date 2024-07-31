@@ -58,7 +58,7 @@ class Bookings(Resource):
     
 class BookingByID(Resource):
     def get(self, booking_id):
-        booking = Booking.query.get(booking_id).first()
+        booking = Booking.query.filter_by(id=booking_id).first()
         return booking.to_dict()
     
     def put(self, booking_id):
@@ -329,15 +329,15 @@ class CheckSession(Resource):
 
 api.add_resource(CheckSession, '/api/check_session')   
 api.add_resource(Payments, '/api/payments')
-api.add_resource(PaymentByID, '/api/payments/<int:payment_id>')
+api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
 api.add_resource(Reviews, '/api/reviews')
-api.add_resource(ReviewByID, '/api/reviews/<int:review_id>')
+api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
 api.add_resource(Users, '/api/users')
-api.add_resource(UserByID, '/api/users/<int:user_id>')
+api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')
-api.add_resource(BookingByID, '/api/bookings/<int:booking_id>')
+api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
 api.add_resource(Spaces, '/api/spaces>')
-api.add_resource(SpaceByID, '/api/spaces/<int:space_id>')
+api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
 

@@ -30,7 +30,7 @@ if __name__ == '__main__':
             users.append(user)
             db.session.add_all(users)
             db.session.commit()
-            print("User data seeded successfully")
+        print("User data seeded successfully")
 
         #Create space data
         spaces = []
