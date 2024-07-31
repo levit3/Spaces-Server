@@ -50,3 +50,9 @@ def test_protected_route_invalid_token(test_client):
     }
     response = test_client.get('/api/users/1', headers=headers)
     assert response.status_code == 401
+
+# Test accessing a protected route without a token
+def test_protected_route_no_token(test_client):
+    
+    response = test_client.get('/api/users/1')
+    assert response.status_code == 401
