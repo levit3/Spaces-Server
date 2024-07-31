@@ -24,7 +24,8 @@ def test_client():
         with app.app_context():
             db.session.remove()
             db.drop_all()
-
+def test_login(test_client):
+    pass
 def test_protected_route_expired_token(test_client):
     with app.app_context():
         user = User.query.filter_by(name='testuser').first()
