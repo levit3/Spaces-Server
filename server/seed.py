@@ -13,8 +13,7 @@ fake = Faker()
 
 if __name__ == '__main__':
     with app.app_context():
-       db.create_all()
-    pass
+     pass
 
 #Create user data
 for _ in range(100):
