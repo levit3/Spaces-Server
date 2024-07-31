@@ -96,29 +96,29 @@ if __name__ == '__main__':
         print("Review data seeded successfully")
 
 
-#Create review images data
-for _ in range(2000):
-    review_id = choice(range(1, 2000))
-    image_url = fake.image_url()
-    review_image = ReviewImage(
-        review_id=review_id,
-        image_url=image_url
-    )
-    db.session.add(review_image)
-    db.session.commit()
+        #Create review images data
+        for _ in range(2000):
+            review_id = choice(range(1, 2000))
+            image_url = fake.image_url()
+            review_image = ReviewImage(
+                review_id=review_id,
+                image_url=image_url
+            )
+            db.session.add(review_image)
+            db.session.commit()
 
 
-print("Review images seeded successfully")
-#Create space images data
-for _ in range(50):
-    space_id = choice(range(1, 50))
-    image_url = fake.image_url()
-    space_image = SpaceImages(
-        space_id=space_id,
-        image_url=image_url
-    )
-    db.session.add(space_image)
-    db.session.commit()
+        print("Review images seeded successfully")
+        #Create space images data
+        for _ in range(50):
+            space_id = choice(range(1, 50))
+            image_url = fake.image_url()
+            space_image = SpaceImages(
+                space_id=space_id,
+                image_url=image_url
+            )
+            db.session.add(space_image)
+            db.session.commit()
 
 
-print("Space images seeded successfully")
+        print("Space images seeded successfully")

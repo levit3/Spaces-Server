@@ -87,7 +87,6 @@ class Space(db.Model, SerializerMixin):
 
     user = db.relationship('User', back_populates = 'spaces')
     reviews = db.relationship('Review', back_populates ='space')
-    images = db.relationship('SpaceImages', back_populates='space')
     space_images = db.relationship('SpaceImages', back_populates='space')
 
 
