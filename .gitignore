@@ -1,0 +1,7 @@
+server/instance/
+server/app.db
+
+server/migrations/alembic.ini
+server/migrations/env.py
+server/migrations/versions/
+server/migrations/__pycache__/
