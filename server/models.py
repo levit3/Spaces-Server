@@ -16,6 +16,7 @@ import re
 class UserRole(enum.Enum):
     USER = "user"
     TENANT = "tenant"
+    ADMIN = "admin"
 
 class User( SerializerMixin, db.Model):
     __tablename__ = 'users'
