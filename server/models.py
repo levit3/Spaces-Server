@@ -86,6 +86,7 @@ class Space(db.Model, SerializerMixin):
 
     user = db.relationship('User', back_populates = 'spaces')
     reviews = db.relationship('Review', back_populates ='space')
+    images = db.relationship('SpaceImages', back_populates='space')
     space_images = db.relationship('SpaceImages', back_populates='space')
 
 
@@ -94,13 +95,13 @@ class Space(db.Model, SerializerMixin):
     
 class SpaceImages(db.Model, SerializerMixin):
     __tablename__ = 'space_images'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
-    image_url = db.Column(db.String, nullable=False) 
-    
+    image_url = db.Column(db.String, nullable=False)
+
     space = db.relationship('Space', back_populates='space_images')
-    
+
     def __repr__(self):
         return f'<SpaceImage {self.image_url}>'
 
@@ -188,7 +189,7 @@ class Payment(db.Model, SerializerMixin):
     payment_status = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.current_date())
     
-    serialize_rules = ['-booking.payments', '-booking.user.spaces']
+    serialize_rules = ['-booking.payments', '-booking.user.spaces', '-booking.user.reviews']
     
     booking = db.relationship("Booking", back_populates="payments")
     user = association_proxy('booking', 'user')
