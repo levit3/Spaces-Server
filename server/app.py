@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from flask import request, make_response, session, jsonify
 from flask_restful import Resource
+import cloudinary
 import jwt
 from functools import wraps
 from datetime import datetime, timedelta
 
 from config import app, db, api
 from models import User, Review, Space, Payment ,Booking, ReviewImage
-import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 
@@ -19,29 +19,35 @@ cloudinary.config(
   api_secret = '6oUAsFqSzho3xOjxebi3SIUps9U'
 )
 
-app.route('/')
+@app.route('/')
 def index():
     return "Welcome to Spaces."
 
 def token_required(func):
     @wraps(func)
-    def decorator(*args, **kwargs):
-        if 'Authorization' not in request.headers:
-            return make_response('Authorization header is missing', 401)
-        token = request.headers.get('Authorization').split(' ')[1]
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(' ')[1]
         if not token:
             return make_response('Token is missing', 401)
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            current_user = User.query.get(data['id']).first()
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            current_user = User.query.filter_by(id=data['id']).first()
+            if not current_user:
+                return make_response(jsonify({'message': 'User not found'}), 401)
+            
+            expiration = datetime.fromisoformat(data.get('expiration', ''))
+            if expiration < datetime.utcnow():
+                return make_response('Token expired', 401)
         except jwt.ExpiredSignatureError:
             return make_response('Token expired', 401)
         except jwt.InvalidTokenError:
             return make_response('Invalid token', 401)
 
-        return func(current_user, *args, **kwargs)
+        return func(*args, **kwargs, current_user=current_user)
 
-    return decorator
+    return decorated
 
 
 
@@ -79,17 +85,20 @@ class BookingByID(Resource):
 
 
 class Users(Resource):
-    @token_required
     def get(self):
-        user = User.query.all()
-        return user.to_dict()
+        users = User.query.all()
+        user = [user.to_dict() for user in users]
+        return make_response(user)
     
 
 class UserByID(Resource):
-    @token_required      
-    def get(self, user_id):
-        user = User.query.get(user_id).first()
-        return user.to_dict()
+    @token_required
+    def get(self, user_id, current_user):
+        if current_user.id != user_id:
+            return jsonify({'message': 'Unauthorized'}), 403
+        user = User.query.filter_by(id = user_id).first()
+        print(user.to_dict())
+        return make_response(user.to_dict(), 200)
     
     @token_required      
     def put(self, user_id):
@@ -124,7 +133,6 @@ class Reviews(Resource):
         return review.to_dict()
     
 class ReviewByID(Resource):
-    @token_required
     def get(self, review_id):
         review = Review.query.get_or_404(review_id)
         return review.to_dict(), 200
@@ -183,16 +191,17 @@ class ReviewByID(Resource):
             return {'error': str(e)}, 400
 
 class Payments(Resource):
-    @token_required      
+    #@token_required      
     def get(self):
-        payment = Payment.query.all()
-        return payment.to_dict()
+        payments = Payment.query.all()
+        payment = [payment.to_dict() for payment in payments]
+        return payment
     
     
 class PaymentByID(Resource):
-    @token_required      
+    # @token_required      
     def get(self, payment_id):
-        payment = Payment.query.get(payment_id).first()
+        payment = Payment.query.get(payment_id)
         return payment.to_dict()
 
     @token_required      
@@ -283,16 +292,16 @@ class Login(Resource):
 
         request_json = request.get_json()
 
-        username = request_json.get('username')
+        name = request_json.get('name')
         password = request_json.get('password')
 
-        user = User.query.filter(User.username == username).first()
+        user = User.query.filter(User.name == name).first()
 
         if user:
             if user.authenticate(password):
                 session['user_id'] = user.id
-                token = jwt.encode({'id': user.id, 'expiration': str(datetime.utcnow()+timedelta(days=5))}, app.config['SECRET_KEY'])
-                return make_response({'user': user, 'token': token}, 200)
+                token = jwt.encode({'id': user.id, 'expiration': str(datetime.utcnow()+timedelta(days=5))}, app.config['SECRET_KEY'],algorithm="HS256")
+                return make_response({'user': user.to_dict(), 'token': token}, 200)
             else:
                 return {'error': 'Invalid Password'}, 401
 
@@ -320,13 +329,13 @@ class CheckSession(Resource):
 
 api.add_resource(CheckSession, '/api/check_session')   
 api.add_resource(Payments, '/api/payments')
-api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
+api.add_resource(PaymentByID, '/api/payments/<int:payment_id>')
 api.add_resource(Reviews, '/api/reviews')
-api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
-api.add_resource(User, '/api/users')
-api.add_resource(UserByID, '/api/users/<int:user_id>/')
+api.add_resource(ReviewByID, '/api/reviews/<int:review_id>')
+api.add_resource(Users, '/api/users')
+api.add_resource(UserByID, '/api/users/<int:user_id>')
 api.add_resource(Bookings, '/api/bookings')
-api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
+api.add_resource(BookingByID, '/api/bookings/<int:booking_id>')
 api.add_resource(Spaces, '/api/spaces>')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>')
 api.add_resource(Login, '/api/login')

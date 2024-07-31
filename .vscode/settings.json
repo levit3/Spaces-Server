@@ -1,0 +1,8 @@
+{
+  "cSpell.words": [
+    "cloudinary"
+  ],
+  "python.analysis.extraPaths": [
+    "./server/test_auth_"
+  ]
+}

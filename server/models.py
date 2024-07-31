@@ -13,23 +13,24 @@ import re
 
 ##Users
 
-Base = declarative_base()
 class UserRole(enum.Enum):
     USER = "user"
     TENANT = "tenant"
+    ADMIN = "admin"
 
-class User(Base, SerializerMixin, db.Model):
+class User( SerializerMixin, db.Model):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user']
-    
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.payments', '-spaces.reviews', '-reviews.space.user']
+       
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
     _password = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
     profile_picture = db.Column(db.String)
     role = db.Column(db.Enum(UserRole), nullable=False)
-    spaces = db.relationship("Space", back_populates = 'user')
+    
+    spaces = db.relationship('Space', back_populates = 'user')
     reviews = db.relationship("Review", back_populates = 'user')
     bookings = db.relationship("Booking", back_populates = 'user')
     payments = association_proxy('bookings','payments')
@@ -58,24 +59,25 @@ class User(Base, SerializerMixin, db.Model):
         password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
         self._password = password_hash.decode('utf-8')
 
-def authenticate(self, password):
-    return bcrypt.check_password_hash(self._password, password.encode('utf-8'))
+    def authenticate(self, password):
+        return bcrypt.check_password_hash(self._password, password.encode('utf-8'))
 
-@validates('email')
-def validate_email(self, key, email):
-  if not re.match(r"[^@]+@[^@]+.[^@]+", email):
-                raise ValueError('Invalid email address')
-  existing_email = User.query.filter_by(email=email).first()
-  if existing_email:
-    raise ValueError('Email already exists')
-  return email
+    @validates('email')
+    def validate_email(self, key, email):
+        if not re.match(r"[^@]+@[^@]+.[^@]+", email):
+                        raise ValueError('Invalid email address')
+        existing_email = User.query.filter_by(email=email).first()
+        if existing_email:
+            raise ValueError('Email already exists')
+        return email
 
 
 ##Spaces
+
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
     
-    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space']
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user']
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
@@ -84,11 +86,9 @@ class Space(db.Model, SerializerMixin):
     status = db.Column(db.String, nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
-    tenant = db.relationship('User', back_populates = 'spaces')
-    bookings = db.relationship('Booking', back_populates ='space')
+    user = db.relationship('User', back_populates = 'spaces')
     reviews = db.relationship('Review', back_populates ='space')
-
-    images = db.relationship('SpaceImages', back_populates='space')
+    space_images = db.relationship('SpaceImages', back_populates='space')
 
 
     def __repr__(self):
@@ -96,13 +96,13 @@ class Space(db.Model, SerializerMixin):
     
 class SpaceImages(db.Model, SerializerMixin):
     __tablename__ = 'space_images'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
-    image_url = db.Column(db.String, nullable=False) 
-    
+    image_url = db.Column(db.String, nullable=False)
+
     space = db.relationship('Space', back_populates='space_images')
-    
+
     def __repr__(self):
         return f'<SpaceImage {self.image_url}>'
 
@@ -119,12 +119,11 @@ class Booking(db.Model,SerializerMixin):
     total_price = db.Column(db.Float, nullable=False)
     status = db.Column(db.String, nullable=False)
     created_at = db.Column(db.Date, nullable=False)
-    updated_at = db.Column(db.Date, nullable=False)
+    updated_at = db.Column(db.Date, nullable=True)
     
    
     serialize_rules=["-space.bookings","-user.bookings","-payment,booking"]
     
-    space = db.relationship('Space', back_populates='bookings')
     user = db.relationship('User', back_populates='bookings')
     payments=db.relationship('Payment', back_populates='booking')
 
@@ -132,7 +131,7 @@ class Booking(db.Model,SerializerMixin):
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
     
-    serialize_rules = ['-space.reviews', '-user.reviews']
+    serialize_rules = ['-space.reviews', '-user.reviews', '-space.user']
     
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
@@ -141,7 +140,7 @@ class Review(db.Model, SerializerMixin):
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
     date = db.Column(db.Date, server_default=func.current_date())
     
-    images = relationship('ReviewImage', back_populates='review', cascade='all, delete-orphan')
+    images = db.relationship('ReviewImage', back_populates='review', cascade='all, delete-orphan')
     space = db.relationship('Space', back_populates='reviews')
     user = db.relationship('User', back_populates='reviews')
   
@@ -153,13 +152,6 @@ class Review(db.Model, SerializerMixin):
         if not (1 <= rating <= 5):
             raise ValueError('Rating must be between 1 and 5')
         return rating
-  
-    @validates('user_id')
-    def validate_user_id(self, key, user_id):
-        user = User.query.get(user_id)
-        if not user:
-            raise ValueError('User does not exist')
-        return user_id
   
     @validates('space_id')
     def validate_space_id(self, key, space_id):
@@ -192,11 +184,13 @@ class Payment(db.Model, SerializerMixin):
     __tablename__ = 'payments'
     
     id = db.Column(db.Integer, primary_key=True)
-    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    booking_id = db.Column(db.Integer, db.ForeignKey('bookings.id'), nullable=False)
     amount = db.Column(db.Integer, nullable=False)
     payment_method = db.Column(db.String, nullable=False)
     payment_status = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.current_date())
+    
+    serialize_rules = ['-booking.payments', '-booking.user.spaces', '-booking.user.reviews']
     
     booking = db.relationship("Booking", back_populates="payments")
     user = association_proxy('booking', 'user')
@@ -206,7 +200,7 @@ class Payment(db.Model, SerializerMixin):
     
     @validates('booking_id')
     def validate_booking_id(self, key, booking_id):
-        booking = Booking.query.get(booking_id).first()
+        booking = Booking.query.get(booking_id)
         if not booking:
             raise ValueError('Booking does not exist')
         return booking_id
