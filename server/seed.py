@@ -22,7 +22,7 @@ if __name__ == '__main__':
 
     #Create user data
         users =[]
-        admin = User(name = 'admin', email = 'admin@admin.com', password = '123456', role = UserRole.ADMIN, profile_picture = "https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
+        admin = User(name = 'admin', email = 'admin@admin.com', password = 'Admin@1234', role = UserRole.ADMIN, profile_picture = "https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
         db.session.add(admin)
         db.session.commit()
         

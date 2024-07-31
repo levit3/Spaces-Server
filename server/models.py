@@ -190,7 +190,7 @@ class Payment(db.Model, SerializerMixin):
     payment_status = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, server_default=func.current_date())
     
-    serialize_rules = ['-booking.payments', '-booking.user.spaces']
+    serialize_rules = ['-booking.payments', '-booking.user.spaces', '-booking.user.reviews']
     
     booking = db.relationship("Booking", back_populates="payments")
     user = association_proxy('booking', 'user')

@@ -24,11 +24,11 @@ def index():
     return "Welcome to Spaces."
 
 def token_required(func):
-    @wraps(func)
-    def decorator(*args, **kwargs):
-        if 'Authorization' not in request.headers:
-            return make_response('Authorization header is missing', 401)
-        token = request.headers.get('Authorization').split(' ')[1]
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(' ')[1]
         if not token:
             return make_response('Token is missing', 401)
         try:
@@ -191,10 +191,11 @@ class ReviewByID(Resource):
             return {'error': str(e)}, 400
 
 class Payments(Resource):
-    @token_required      
+    #@token_required      
     def get(self):
-        payment = Payment.query.all()
-        return payment.to_dict()
+        payments = Payment.query.all()
+        payment = [payment.to_dict() for payment in payments]
+        return payment
     
     
 class PaymentByID(Resource):
