@@ -24,7 +24,7 @@ def index():
     return "Welcome to Spaces."
 
 def token_required(func):
-    @wraps(f)
+    @wraps(func)
     def decorated(*args, **kwargs):
         token = None
         if 'Authorization' in request.headers:
@@ -47,7 +47,7 @@ def token_required(func):
 
         return func(*args, **kwargs, current_user=current_user)
 
-    return decorator
+    return decorated
 
 
 
