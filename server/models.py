@@ -20,7 +20,7 @@ class UserRole(enum.Enum):
 class User( SerializerMixin, db.Model):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.payments', '-spaces.reviews', '-reviews.space.user']
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.payments', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking']
        
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
@@ -76,7 +76,7 @@ class User( SerializerMixin, db.Model):
 class Space(db.Model, SerializerMixin):
     __tablename__ ='spaces'
     
-    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user']
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user','-bookings.user.spaces', '-bookings.payment.booking', '-bookings.payment.booking', '-bookings.user.reviews', '-bookings.user.bookings', '-bookings.user.payments']
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
     description = db.Column(db.String, nullable=False)
@@ -88,6 +88,7 @@ class Space(db.Model, SerializerMixin):
     user = db.relationship('User', back_populates = 'spaces')
     reviews = db.relationship('Review', back_populates ='space')
     space_images = db.relationship('SpaceImages', back_populates='space')
+    bookings = db.relationship('Booking', back_populates='space')
 
 
     def __repr__(self):
@@ -124,7 +125,8 @@ class Booking(db.Model,SerializerMixin):
     serialize_rules=["-space.bookings","-user.bookings","-payment,booking"]
     
     user = db.relationship('User', back_populates='bookings')
-    payments=db.relationship('Payment', back_populates='booking')
+    payment=db.relationship('Payment', back_populates='booking')
+    space = db.relationship('Space', back_populates='bookings')
 
 #Reviews
 class Review(db.Model, SerializerMixin):
@@ -191,7 +193,7 @@ class Payment(db.Model, SerializerMixin):
     
     serialize_rules = ['-booking.payments', '-booking.user.spaces', '-booking.user.reviews']
     
-    booking = db.relationship("Booking", back_populates="payments")
+    booking = db.relationship("Booking", back_populates="payment")
     user = association_proxy('booking', 'user')
     
     def __repr__(self):
