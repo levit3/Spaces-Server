@@ -23,25 +23,23 @@ cloudinary.config(
 def index():
     return "Welcome to Spaces."
 
-def token_required(func):
-    @wraps(func)
-    def decorator(*args, **kwargs):
-        if 'Authorization' not in request.headers:
-            return make_response('Authorization header is missing', 401)
-        token = request.headers.get('Authorization').split(' ')[1]
+def token_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        token = None
+        if 'Authorization' in request.headers:
+            token = request.headers['Authorization'].split(' ')[1]
         if not token:
             return make_response('Token is missing', 401)
         try:
-            data = jwt.decode(token, app.config['SECRET_KEY'])
-            current_user = User.query.get(data['id']).first()
+            data = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
+            current_user = User.query.get(data['id'])
         except jwt.ExpiredSignatureError:
             return make_response('Token expired', 401)
         except jwt.InvalidTokenError:
             return make_response('Invalid token', 401)
-
-        return func(current_user, *args, **kwargs)
-
-    return decorator
+        return f(current_user, *args, **kwargs)
+    return decorated
 
 
 
@@ -86,11 +84,13 @@ class Users(Resource):
     
 
 class UserByID(Resource):
+    @token_required
     def get(self, user_id):
-        user = User.query.filter_by(id = user_id).first()
-        print(user.to_dict())
-        return make_response(user.to_dict(), 200)
-    
+        user = User.query.filter_by(id=user_id).first()
+        if user:
+            return make_response(user.to_dict(), 200)
+        else:
+            return make_response({'error': 'User not found'}, 404)
     @token_required      
     def put(self, user_id):
         user = User.query.get(user_id)
