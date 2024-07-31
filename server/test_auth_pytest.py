@@ -25,7 +25,10 @@ def test_client():
             db.session.remove()
             db.drop_all()
 def test_login(test_client):
-    pass
+    response = test_client.post('/api/login',json={
+        'name': 'testuser',
+        'password': 'P@ssword123'
+    })
 def test_protected_route_expired_token(test_client):
     with app.app_context():
         user = User.query.filter_by(name='testuser').first()
