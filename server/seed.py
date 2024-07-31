@@ -25,13 +25,12 @@ if __name__ == '__main__':
         admin = User(name = 'admin', email = 'admin@admin.com', password = 'Admin@1234', role = UserRole.ADMIN, profile_picture = "https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
         db.session.add(admin)
         db.session.commit()
-        
         for _ in range(200):
             user = User(name=fake.name(), email=fake.email(), password=fake.password(length=10), role =rc([UserRole.USER, UserRole.TENANT], 1)[0], profile_picture="https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
             users.append(user)
-        db.session.add_all(users)
-        db.session.commit()
-        print("User data seeded successfully")
+            db.session.add_all(users)
+            db.session.commit()
+            print("User data seeded successfully")
 
         #Create space data
         spaces = []
@@ -60,6 +59,7 @@ if __name__ == '__main__':
             total_price = hours * space.price_per_hour
             status = choice(["pending", "approved", "rejected"])
             created_at = fake.date_this_year()
+
 
 
             booking = Booking(

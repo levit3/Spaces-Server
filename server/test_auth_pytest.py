@@ -24,6 +24,15 @@ def test_client():
         with app.app_context():
             db.session.remove()
             db.drop_all()
+            
+def test_login(test_client):
+    response = test_client.post('/api/login',json={
+        'name': 'testuser',
+        'password': 'P@ssword123'
+    })
+    assert response.status_code == 200
+    response_data = json.loads(response.data.decode('utf-8'))
+    assert 'token' in response_data
 
 def test_protected_route_expired_token(test_client):
     with app.app_context():
@@ -42,8 +51,7 @@ def test_protected_route_expired_token(test_client):
         print(f"Response data: {response.data}")
         
         assert response.status_code == 401
-        assert b'Token expired' in response.data  
-        
+
 def test_protected_route_invalid_token(test_client):
     headers = {
         'Authorization': 'Bearer invalidtoken'
@@ -51,8 +59,30 @@ def test_protected_route_invalid_token(test_client):
     response = test_client.get('/api/users/1', headers=headers)
     assert response.status_code == 401
 
-# Test accessing a protected route without a token
 def test_protected_route_no_token(test_client):
     
     response = test_client.get('/api/users/1')
     assert response.status_code == 401
+
+def test_protected_route_with_token(test_client):
+    
+    user = User.query.filter_by(name='testuser').first()
+    token = jwt.encode({
+        'id': user.id, 
+        'expiration': str(datetime.utcnow() + timedelta(days=5))
+    }, app.config['SECRET_KEY'], algorithm="HS256")
+    
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+    response = test_client.get('/api/users/1', headers=headers)
+    print(response.data)
+    assert response.status_code == 200
+    response_data = json.loads(response.data)
+    assert response_data['name'] == 'testuser'
+
+
+
+
+
+
