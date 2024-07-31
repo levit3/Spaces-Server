@@ -22,6 +22,10 @@ if __name__ == '__main__':
 
     #Create user data
         users =[]
+        admin = User(name = 'admin', email = 'admin@admin.com', password = 'Admin@1234', role = UserRole.ADMIN, profile_picture = "https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
+        db.session.add(admin)
+        db.session.commit()
+        
         for _ in range(200):
             user = User(name=fake.name(), email=fake.email(), password=fake.password(length=10), role =rc([UserRole.USER, UserRole.TENANT], 1)[0], profile_picture="https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
             users.append(user)
@@ -31,8 +35,10 @@ if __name__ == '__main__':
 
         #Create space data
         spaces = []
+        tenants = User.query.filter_by(role='TENANT').all()
         for _ in range(50):
-            space = Space(title=fake.company(), description=fake.text(max_nb_chars=200), location=fake.city(), price_per_hour=randint(10, 300), status=rc(["available", "unavailable"], k=1)[0], tenant_id=choice(range(1, 100)))
+            tenant = choice(tenants)
+            space = Space(title=fake.company(), description=fake.text(max_nb_chars=200), location=fake.city(), price_per_hour=randint(10, 300), status=rc(["available", "unavailable"], k=1)[0], tenant_id=tenant.id)
             spaces.append(space)
         db.session.add_all(spaces)
         db.session.commit()
@@ -40,8 +46,8 @@ if __name__ == '__main__':
 
         #Create booking data
         bookings = []
-        for _ in range(200):
-            user_id = choice(range(1, 200))
+        for i in range(200):
+            user_id = i
             space_id = choice(range(1, 50))
             start_date = fake.date_this_year()
             end_date = fake.date_between(start_date=start_date, end_date="+1y")
