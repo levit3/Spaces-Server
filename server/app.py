@@ -92,10 +92,10 @@ class Users(Resource):
     
 
 class UserByID(Resource):
-    # @token_required
-    def get(self, user_id):
-        # if current_user.id != user_id:
-        #     return jsonify({'message': 'Unauthorized'}), 403
+    @token_required
+    def get(self, user_id, current_user):
+        if current_user.id != user_id:
+            return jsonify({'message': 'Unauthorized'}), 403
         user = User.query.filter_by(id = user_id).first()
         return make_response(user.to_dict(), 200)
     
@@ -236,6 +236,7 @@ class Spaces(Resource):
       return make_response(jsonify(space_data), 200)
 
 class SpaceByID(Resource):
+    @token_required
     def get(self, space_id):
         space = Space.query.get(space_id)
         return [space.to_dict()]

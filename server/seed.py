@@ -45,8 +45,9 @@ if __name__ == '__main__':
 
         #Create booking data
         bookings = []
+        users = User.query.filter_by(role='USER').all()
         for _ in range(1, 201):
-            user_id = choice(range(2, 200))
+            user_id = choice(users).id
             space_id = choice(range(1, 50))
             start_date = fake.date_this_year()
             end_date = fake.date_between(start_date=start_date, end_date="+1y")
@@ -99,13 +100,16 @@ if __name__ == '__main__':
 
         #Create reviews data
         reviews =[]
+        users = User.query.filter_by(role='USER').all()
+        print(users)
         for _ in range(200):
-            user_id = choice(range(1, 100))
+            user_id = choice(users).id
             user = User.query.filter_by(id=user_id).first()
             bookings = user.bookings
             if bookings:
-                spaces = [booking.space for booking in bookings]
-                space_id = choice([space.id for space in spaces])  
+                booking = choice(bookings)
+                space = booking.space
+                space_id = space.id 
                 # space_id = choice(range(1, 50))
                 rating = randint(1, 5)
                 comment = fake.text(max_nb_chars=200)
