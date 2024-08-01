@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from app import app
-from models import User, Review, Space, Payment, Booking, UserRole, ReviewImage, SpaceImages
+from models import User, Review, Space, Payment, Booking, UserRole, ReviewImage, SpaceImages, Event
 from faker import Faker
 from config import db
 from random import randint, choice, sample as rc
@@ -126,5 +126,31 @@ if __name__ == '__main__':
         db.session.add_all(reviews)
         db.session.commit()
         print("Review data seeded successfully")
+        
+        #create events
+        events = []
+        users = User.query.filter_by(role='USER').all()
+        spaces = Space.query.filter_by(status = 'unavailable').all()
+        for _ in range(1, 51):
+            if spaces:
+                space = choice(spaces)
+                space_id = space.id
+                spaces.remove(space)
+                title = fake.sentence()
+                description = fake.text(max_nb_chars=200)
+                date = fake.future_date()
+                organizer_id = choice(users).id
+                
+                event = Event(
+                    title=title,
+                    description=description,
+                    date=date,
+                    organizer_id=organizer_id,
+                    space_id=space_id
+                )
+                events.append(event)
+        db.session.add_all(events)
+        db.session.commit()
+        print("Events seeded successfully")
 
 
