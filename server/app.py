@@ -56,6 +56,14 @@ class Bookings(Resource):
         booking = Booking.query.all()
         return booking.to_dict()
     
+    def post(self):
+        data = request.json
+        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
+        db.session.add(booking)
+        db.session.commit()
+        return booking.to_dict()
+        
+    
 class BookingByID(Resource):
     def get(self, booking_id):
         booking = Booking.query.filter_by(id=booking_id).first()
@@ -131,6 +139,12 @@ class Reviews(Resource):
         review = Review.query.all()
         return review.to_dict()
     
+    def post(self):
+        data = request.json
+        review = Review(comment=data['comment'], rating=data['rating'], user_id=data['user_id'], space_id=data['space_id'])    
+        db.session.add(review)
+        db.session.commit()
+        return review.to_dict()
 class ReviewByID(Resource):
     def get(self, review_id):
         review = Review.query.get_or_404(review_id)
@@ -196,6 +210,13 @@ class Payments(Resource):
         payment = [payment.to_dict() for payment in payments]
         return payment
     
+    def post(self):
+        data = request.get_json()
+        payment = Payment(**data)
+        db.session.add(payment)
+        db.session.commit()
+        return payment.to_dict()
+    
     
 class PaymentByID(Resource):
     # @token_required      
@@ -234,14 +255,7 @@ class Spaces(Resource):
       spaces = Space.query.all()
       space_data = [space.to_dict() for space in spaces]
       return make_response(jsonify(space_data), 200)
-
-class SpaceByID(Resource):
-    @token_required
-    def get(self, space_id):
-        space = Space.query.get(space_id)
-        return [space.to_dict()]
-
-    @token_required
+    
     def post(self):
         data = request.get_json()
         title = data.get('username')
@@ -249,17 +263,23 @@ class SpaceByID(Resource):
         location = data.get('password')
         price_per_hour = data.get('balance')
         status = data.get('status')
-        
+
         space = Space(
-          title=title,
-          description=description,
-          location=location,
-          price_per_hour=price_per_hour,
-          status=status,
+            title=title,
+            description=description,
+            location=location,
+            price_per_hour=price_per_hour,
+            status=status,
         )
         db.session.add(space)
         db.session.commit()
         return space.to_dict()
+
+class SpaceByID(Resource):
+    # @token_required
+    def get(self, space_id):
+        space = Space.query.get(space_id)
+        return [space.to_dict()]
 
     @token_required   
     def put(self, space_id):
@@ -326,7 +346,7 @@ class CheckSession(Resource):
             return jsonify({"error": "User not found"}), 404
     else:
         return jsonify({"error": "Unauthorized"}), 401
-
+    
 api.add_resource(CheckSession, '/api/check_session')   
 api.add_resource(Payments, '/api/payments')
 api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')

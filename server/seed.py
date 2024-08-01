@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from app import app
-from models import User, Review, Space, Payment, Booking, UserRole, ReviewImage, SpaceImages
+from models import User, Review, Space, Payment, Booking, UserRole, ReviewImage, SpaceImages, Event
 from faker import Faker
 from config import db
 from random import randint, choice, sample as rc
@@ -127,4 +127,4 @@ if __name__ == '__main__':
         db.session.commit()
         print("Review data seeded successfully")
 
-
+        
