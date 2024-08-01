@@ -22,17 +22,22 @@ if __name__ == '__main__':
 
     #Create user data
         users =[]
+        admin = User(name = 'admin', email = 'admin@admin.com', password = 'Admin@1234', role = UserRole.ADMIN, profile_picture = "https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
+        db.session.add(admin)
+        db.session.commit()
         for _ in range(200):
             user = User(name=fake.name(), email=fake.email(), password=fake.password(length=10), role =rc([UserRole.USER, UserRole.TENANT], 1)[0], profile_picture="https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg")
             users.append(user)
-        db.session.add_all(users)
-        db.session.commit()
+            db.session.add_all(users)
+            db.session.commit()
         print("User data seeded successfully")
 
         #Create space data
         spaces = []
+        tenants = User.query.filter_by(role='TENANT').all()
         for _ in range(50):
-            space = Space(title=fake.company(), description=fake.text(max_nb_chars=200), location=fake.city(), price_per_hour=randint(10, 300), status=rc(["available", "unavailable"], k=1)[0], tenant_id=choice(range(1, 100)))
+            tenant = choice(tenants)
+            space = Space(title=fake.company(), description=fake.text(max_nb_chars=200), location=fake.city(), price_per_hour=randint(10, 300), status=rc(["available", "unavailable"], k=1)[0], tenant_id=tenant.id)
             spaces.append(space)
         db.session.add_all(spaces)
         db.session.commit()
@@ -40,8 +45,9 @@ if __name__ == '__main__':
 
         #Create booking data
         bookings = []
-        for _ in range(200):
-            user_id = choice(range(1, 200))
+        users = User.query.filter_by(role='USER').all()
+        for _ in range(1, 201):
+            user_id = choice(users).id
             space_id = choice(range(1, 50))
             start_date = fake.date_this_year()
             end_date = fake.date_between(start_date=start_date, end_date="+1y")
@@ -54,6 +60,7 @@ if __name__ == '__main__':
             total_price = hours * space.price_per_hour
             status = choice(["pending", "approved", "rejected"])
             created_at = fake.date_this_year()
+
 
 
             booking = Booking(
@@ -72,8 +79,8 @@ if __name__ == '__main__':
 
         #Create payment data
         payments = []
-        for _ in range(200):
-            booking_id = choice(range(1, 100))
+        for i in range(1, 201):
+            booking_id = i
             amount = randint(10, 1000)
             payment_method = choice(["card", "paypal", "cash"])
             payment_status = choice(["pending", "paid", "failed"])
@@ -93,21 +100,29 @@ if __name__ == '__main__':
 
         #Create reviews data
         reviews =[]
+        users = User.query.filter_by(role='USER').all()
+        print(users)
         for _ in range(200):
-            user_id = choice(range(1, 100))
-            space_id = choice(range(1, 50))
-            rating = randint(1, 5)
-            comment = fake.text(max_nb_chars=200)
-            created_at = fake.date_this_year()
+            user_id = choice(users).id
+            user = User.query.filter_by(id=user_id).first()
+            bookings = user.bookings
+            if bookings:
+                booking = choice(bookings)
+                space = booking.space
+                space_id = space.id 
+                # space_id = choice(range(1, 50))
+                rating = randint(1, 5)
+                comment = fake.text(max_nb_chars=200)
+                created_at = fake.date_this_year()
 
-            review = Review(
-                user_id=user_id,
-                space_id=space_id,
-                rating=rating,
-                comment=comment,
-                date=created_at
-            )
-            reviews.append(review)
+                review = Review(
+                    user_id=user_id,
+                    space_id=space_id,
+                    rating=rating,
+                    comment=comment,
+                    date=created_at
+                )
+                reviews.append(review)
         db.session.add_all(reviews)
         db.session.commit()
         print("Review data seeded successfully")

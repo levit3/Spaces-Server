@@ -5,3 +5,4 @@ server/migrations/alembic.ini
 server/migrations/env.py
 server/migrations/versions/
 server/migrations/__pycache__/
+server/__pycache__/
