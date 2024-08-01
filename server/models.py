@@ -9,6 +9,7 @@ import enum
 from sqlalchemy import func
 from config import db, bcrypt
 import re
+import datetime
 
 ##Users
 
@@ -33,6 +34,7 @@ class User( SerializerMixin, db.Model):
     reviews = db.relationship("Review", back_populates = 'user')
     bookings = db.relationship("Booking", back_populates = 'user')
     payments = association_proxy('bookings','payments')
+    events = db.relationship("Event", back_populates = 'user')
 
 
     def __repr__(self):
@@ -89,6 +91,7 @@ class Space(db.Model, SerializerMixin):
     reviews = db.relationship('Review', back_populates ='space')
     space_images = db.relationship('SpaceImages', back_populates='space')
     bookings = db.relationship('Booking', back_populates='space')
+    events = db.relationship('Event', back_populates='space')
 
 
     def __repr__(self):
@@ -210,3 +213,53 @@ class Payment(db.Model, SerializerMixin):
         if amount < 0:
             raise ValueError('Amount must be greater than 0')
         return amount
+
+class Event(db.Model, SerializerMixin):
+    tablename = 'events'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String, nullable=False)
+    description = db.Column(db.String, nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+
+    serialize_rules = ['-space.events','-user.events','-user.spaces','-space.user','-space.reviews','-space.bookings','-space.space_images','-space.events','-user.bookings','-user.reviews','-user.payments']
+
+    space = db.relationship('Space', back_populates='events')
+    user = db.relationship('User', back_populates='events')
+
+    def repr(self):
+        return f'<Event {self.title}, {self.description}, {self.date}, {self.location}, {self.organizer_id}, {self.space_id}>'
+
+    @validates('organizer_id')
+    def validate_organizer_id(self, key, organizer_id):
+        user = User.query.get(organizer_id)
+        if not user:
+            raise ValueError('Organizer does not exist')
+        return organizer_id
+
+    @validates('space_id')
+    def validate_space_id(self, key, space_id):
+        space = Space.query.get(space_id)
+        if not space:
+            raise ValueError('Space does not exist')
+        return space_id
+
+    @validates('title')
+    def validate_title(self, key, title):
+        if len(title) < 5:
+            raise ValueError('Title must be at least 5 characters long')
+        return title
+
+    @validates('description')
+    def validate_description(self, key, description):
+        if len(description) < 10:
+            raise ValueError('Description must be at least 10 characters long')
+        return description
+
+    @validates('date')
+    def validate_date(self, key, date):
+        if date < datetime.date.today():
+            raise ValueError('Date must be in the future')
+        return date

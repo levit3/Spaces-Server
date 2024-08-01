@@ -7,9 +7,10 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 from config import app, db, api
-from models import User, Review, Space, Payment ,Booking, ReviewImage
+from models import User, Review, Space, Payment ,Booking, ReviewImage, Event
 import cloudinary.uploader
 import cloudinary.api
+
 
 
 
@@ -55,6 +56,14 @@ class Bookings(Resource):
     def get(self):
         booking = Booking.query.all()
         return booking.to_dict()
+    
+    def post(self):
+        data = request.json
+        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
+        db.session.add(booking)
+        db.session.commit()
+        return booking.to_dict()
+        
     
 class BookingByID(Resource):
     def get(self, booking_id):
@@ -131,6 +140,12 @@ class Reviews(Resource):
         review = Review.query.all()
         return review.to_dict()
     
+    def post(self):
+        data = request.json
+        review = Review(comment=data['comment'], rating=data['rating'], user_id=data['user_id'], space_id=data['space_id'])    
+        db.session.add(review)
+        db.session.commit()
+        return review.to_dict()
 class ReviewByID(Resource):
     def get(self, review_id):
         review = Review.query.get_or_404(review_id)
@@ -196,6 +211,13 @@ class Payments(Resource):
         payment = [payment.to_dict() for payment in payments]
         return payment
     
+    def post(self):
+        data = request.get_json()
+        payment = Payment(**data)
+        db.session.add(payment)
+        db.session.commit()
+        return payment.to_dict()
+    
     
 class PaymentByID(Resource):
     # @token_required      
@@ -234,14 +256,7 @@ class Spaces(Resource):
       spaces = Space.query.all()
       space_data = [space.to_dict() for space in spaces]
       return make_response(jsonify(space_data), 200)
-
-class SpaceByID(Resource):
-    @token_required
-    def get(self, space_id):
-        space = Space.query.get(space_id)
-        return [space.to_dict()]
-
-    @token_required
+    
     def post(self):
         data = request.get_json()
         title = data.get('username')
@@ -249,17 +264,23 @@ class SpaceByID(Resource):
         location = data.get('password')
         price_per_hour = data.get('balance')
         status = data.get('status')
-        
+
         space = Space(
-          title=title,
-          description=description,
-          location=location,
-          price_per_hour=price_per_hour,
-          status=status,
+            title=title,
+            description=description,
+            location=location,
+            price_per_hour=price_per_hour,
+            status=status,
         )
         db.session.add(space)
         db.session.commit()
         return space.to_dict()
+
+class SpaceByID(Resource):
+    # @token_required
+    def get(self, space_id):
+        space = Space.query.get(space_id)
+        return [space.to_dict()]
 
     @token_required   
     def put(self, space_id):
@@ -326,6 +347,52 @@ class CheckSession(Resource):
             return jsonify({"error": "User not found"}), 404
     else:
         return jsonify({"error": "Unauthorized"}), 401
+    
+    
+class Events(Resource):
+    def get(self):
+        events = Event.query.all()
+        event_data = [event.to_dict() for event in events]
+        return make_response(jsonify(event_data), 200)
+
+    def post(self):
+        data = request.get_json()
+        title = data.get('title')
+        description = data.get('description')
+        location = data.get('location')
+        date = data.get('date')
+        organizer_id = data.get('user_id')
+        space_id = data.get('space_id')   
+
+        event = Event(
+            title=title,
+            description=description,
+            location=location,
+            date=date,
+            organizer_id=organizer_id,
+            space_id=space_id)
+        db.session.add(event)
+        db.session.commit()
+        return make_response(event.to_dict())
+class EventByID(Resource):
+    def get(self, event_id):
+        event = Event.query.get(event_id)
+        return [event.to_dict()]
+
+    def patch(self, id):
+        event = Event.query.get(id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(event, key, value)
+        db.session.commit()
+        return make_response(event.to_dict())
+
+    def delete(self, id):
+        event = Event.query.get(id)
+        db.session.delete(event)
+        db.session.commit()
+        return make_response(event.to_dict())  
+    
 
 api.add_resource(CheckSession, '/api/check_session')   
 api.add_resource(Payments, '/api/payments')
@@ -340,6 +407,8 @@ api.add_resource(Spaces, '/api/spaces>')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
+api.add_resource(Events, '/api/events')
+api.add_resource(EventByID, '/api/events/<int:event_id>/')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)
