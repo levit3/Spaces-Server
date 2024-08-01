@@ -9,6 +9,7 @@ import enum
 from sqlalchemy import func
 from config import db, bcrypt
 import re
+import datetime
 
 ##Users
 
@@ -33,6 +34,7 @@ class User( SerializerMixin, db.Model):
     reviews = db.relationship("Review", back_populates = 'user')
     bookings = db.relationship("Booking", back_populates = 'user')
     payments = association_proxy('bookings','payments')
+    events = db.relationship("Event", back_populates = 'user')
 
 
     def __repr__(self):
@@ -89,6 +91,7 @@ class Space(db.Model, SerializerMixin):
     reviews = db.relationship('Review', back_populates ='space')
     space_images = db.relationship('SpaceImages', back_populates='space')
     bookings = db.relationship('Booking', back_populates='space')
+    events = db.relationship('Event', back_populates='space')
 
 
     def __repr__(self):
