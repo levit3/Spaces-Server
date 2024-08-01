@@ -7,9 +7,10 @@ from functools import wraps
 from datetime import datetime, timedelta
 
 from config import app, db, api
-from models import User, Review, Space, Payment ,Booking, ReviewImage
+from models import User, Review, Space, Payment ,Booking, ReviewImage, Event
 import cloudinary.uploader
 import cloudinary.api
+
 
 
 
@@ -326,6 +327,52 @@ class CheckSession(Resource):
             return jsonify({"error": "User not found"}), 404
     else:
         return jsonify({"error": "Unauthorized"}), 401
+    
+    
+class Events(Resource):
+    def get(self):
+        events = Event.query.all()
+        event_data = [event.to_dict() for event in events]
+        return make_response(jsonify(event_data), 200)
+
+    def post(self):
+        data = request.get_json()
+        title = data.get('title')
+        description = data.get('description')
+        location = data.get('location')
+        date = data.get('date')
+        organizer_id = data.get('user_id')
+        space_id = data.get('space_id')   
+
+        event = Event(
+            title=title,
+            description=description,
+            location=location,
+            date=date,
+            organizer_id=organizer_id,
+            space_id=space_id)
+        db.session.add(event)
+        db.session.commit()
+        return make_response(event.to_dict())
+class EventByID(Resource):
+    def get(self, event_id):
+        event = Event.query.get(event_id)
+        return [event.to_dict()]
+
+    def patch(self, id):
+        event = Event.query.get(id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(event, key, value)
+        db.session.commit()
+        return make_response(event.to_dict())
+
+    def delete(self, id):
+        event = Event.query.get(id)
+        db.session.delete(event)
+        db.session.commit()
+        return make_response(event.to_dict())  
+    
 
 api.add_resource(CheckSession, '/api/check_session')   
 api.add_resource(Payments, '/api/payments')
@@ -340,6 +387,8 @@ api.add_resource(Spaces, '/api/spaces>')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
+api.add_resource(Events, '/api/events')
+api.add_resource(EventByID, '/api/events/<int:event_id>/')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)
