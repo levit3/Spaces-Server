@@ -3,6 +3,7 @@ from flask import request, make_response, session, jsonify
 from flask_restful import Resource
 import cloudinary
 import jwt
+import requests
 from functools import wraps
 from datetime import datetime, timedelta
 
@@ -393,7 +394,59 @@ class EventByID(Resource):
         db.session.commit()
         return make_response(event.to_dict())  
     
+class SendEmail(Resource):
+    def post(self):
+        data = request.get_json()
+        to = data.get('to')
 
+        if not to:
+            return {"message": "Recipient email is required"}, 400
+
+        mailjet_api_key = 'c40b5166cf91591dfd94b42e4d944ec8'
+        mailjet_secret_key = '63d83d87e6f22984189b90a177907ce7'
+        mailjet_url = 'https://api.mailjet.com/v3.1/send'
+
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        email_data = {
+            'Messages': [
+                {
+                    'From': {
+                        'Email': 'nickstech707@gmail.com',
+                        'Name': 'Spaces'
+                    },
+                    'To': [
+                        {
+                            'Email': to,
+                            'Name': 'Recipient Name'
+                        }
+                    ],
+                    'TemplateID': 6185052,  
+                    'TemplateLanguage': True,
+                    'Subject': 'Event Booking',
+                    'Variables': {
+                        'event_date': 'November 15th',
+                        'message': 'Attending a trade show...'
+                    }
+                }
+            ]
+        }
+
+        response = requests.post(
+            mailjet_url,
+            headers=headers,
+            auth=(mailjet_api_key, mailjet_secret_key),
+            json=email_data
+        )
+
+        if response.status_code == 200:
+            return {"message": "Email sent"}, 200
+        else:
+            return {"message": "Failed to send email", "error": response.text}, response.status_code
+
+api.add_resource(SendEmail, '/api/send-email')
 api.add_resource(CheckSession, '/api/check_session')   
 api.add_resource(Payments, '/api/payments')
 api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')

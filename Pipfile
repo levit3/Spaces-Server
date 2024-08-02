@@ -19,6 +19,7 @@ jwt = "*"
 cloudinary = "*"
 pytest = "*"
 pyjwt = "*"
+requests = "*"
 
 [dev-packages]
 
