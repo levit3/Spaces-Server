@@ -407,3 +407,10 @@ class PaymentByID(Resource):
                     return {"approval_url": approval_url}, 200
         else:
             return {"error": paypal_payment.error}, 400
+        
+class PaymentSuccess(Resource):
+    def get(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        payment.status = 'success'
+        db.session.commit()
+        return {"message": "Payment processed successfully."}, 200
