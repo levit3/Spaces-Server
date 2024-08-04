@@ -414,3 +414,10 @@ class PaymentSuccess(Resource):
         payment.status = 'success'
         db.session.commit()
         return {"message": "Payment processed successfully."}, 200
+    
+class PaymentCancel(Resource):
+    def get(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        payment.status = 'cancelled'
+        db.session.commit()
+        return redirect("http://localhost:3000/payment", 302)
