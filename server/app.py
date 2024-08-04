@@ -1,20 +1,63 @@
 #!/usr/bin/env python3
-from flask import request, make_response, session, jsonify
+from flask import Flask, request, make_response, session, jsonify, redirect, flash
 from flask_restful import Resource
 import cloudinary
 import jwt
 import requests
 from functools import wraps
 from datetime import datetime, timedelta
-
 from config import app, db, api
 from models import User, Review, Space, Payment ,Booking, ReviewImage, Event
 import cloudinary.uploader
 import cloudinary.api
+from requests.auth import HTTPBasicAuth
+import base64
+import paypalrestsdk
+from flask_cors import CORS
+import requests
+from datetime import datetime
+import re
+import logging
 
 
+logging.basicConfig(level=logging.DEBUG)
 
+#M-pesa configuration
+consumer_key = "iUAZGP5jVKh3aGWbl1BfQcEiax5UbhApLFhvh6Q0puqMbMpo"
+consumer_secret = "f8VEXQiNQ5GuseSZQVM1sdsQS2mEuJn4D62MAhAYkqDzRjhLXD5n6dNjk68uRMpC"
+shortcode = "174379"
+passkey = "bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919"
+callback_url = "https://mydomain.com/path"
+# callback_url = "http://127.0.0.1:5555/api/callback/<int:payment_id>/"
 
+# M-pesa validation
+def get_oauth_token():
+    auth = base64.b64encode(f"{consumer_key}:{consumer_secret}".encode()).decode('utf-8')
+    response = requests.get(
+        'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials',
+        headers={'Authorization': f'Basic {auth}'}
+    )
+    response.raise_for_status()
+    return response.json()['access_token']
+
+# Phone number validation
+def validate_and_format_phone_number(phone_number):
+    phone_number = re.sub(r'\D', '', phone_number)
+    if not phone_number.startswith('254'):
+        if phone_number.startswith('0'):
+            phone_number = '254' + phone_number[1:]
+        else:
+            phone_number = '254' + phone_number
+    return phone_number
+
+# PayPal configuration
+paypalrestsdk.configure({
+  "mode": "live",
+  "client_id": "Acm84K466flWgwo-jGejv8-RfoKFHNh8T5lDevWHTCxUiZirnXzn3DznjQTOGbjCkIO1fuMhYZjQj4To",
+  "client_secret": "EPZX93R4UNJLPneP89oB3RaGipsNhCBNRvNRBfyv9V-YFbydUfseSZxz8CKiukfjbyftpFtU4SWfqCPj"
+})
+
+# Cloudinary configuration
 cloudinary.config(
   cloud_name = 'dzqt3usfp',
   api_key = '618183139173486',
@@ -102,14 +145,14 @@ class Users(Resource):
     
 
 class UserByID(Resource):
-    @token_required
+    # @token_required
     def get(self, user_id, current_user):
         if current_user.id != user_id:
             return jsonify({'message': 'Unauthorized'}), 403
         user = User.query.filter_by(id = user_id).first()
         return make_response(user.to_dict(), 200)
     
-    @token_required      
+    # @token_required      
     def put(self, user_id):
         user = User.query.get(user_id)
         data = request.get_json()
@@ -118,14 +161,14 @@ class UserByID(Resource):
         db.session.commit()
         return user.to_dict()
 
-    @token_required      
+    # @token_required      
     def delete(self, user_id):
         user = User.query.get(user_id)
         db.session.delete(user)
         db.session.commit()
         return user.to_dict()
     
-    @token_required      
+    # @token_required      
     def patch(self, user_id):
         user = User.query.get(user_id)
         data = request.get_json()
@@ -152,7 +195,7 @@ class ReviewByID(Resource):
         review = Review.query.get_or_404(review_id)
         return review.to_dict(), 200
     
-    @token_required
+    # @token_required
     def put(self, review_id):
         review = Review.query.get_or_404(review_id)
         data = request.form
@@ -175,14 +218,14 @@ class ReviewByID(Resource):
         except ValueError as e:
             return {'error': str(e)}, 400
 
-    @token_required
+    # @token_required
     def delete(self, review_id):
         review = Review.query.get_or_404(review_id)
         db.session.delete(review)
         db.session.commit()
         return {'message': 'Review deleted'}, 200
     
-    @token_required
+    # @token_required
     def patch(self, review_id):
         review = Review.query.get_or_404(review_id)
         data = request.form
@@ -205,28 +248,28 @@ class ReviewByID(Resource):
         except ValueError as e:
             return {'error': str(e)}, 400
 
+
+
 class Payments(Resource):
-    #@token_required      
     def get(self):
         payments = Payment.query.all()
         payment = [payment.to_dict() for payment in payments]
         return payment
-    
+
     def post(self):
         data = request.get_json()
         payment = Payment(**data)
         db.session.add(payment)
         db.session.commit()
         return payment.to_dict()
-    
-    
+
 class PaymentByID(Resource):
-    # @token_required      
+    # @token_required  
     def get(self, payment_id):
         payment = Payment.query.get(payment_id)
         return payment.to_dict()
 
-    @token_required      
+    # @token_required  
     def put(self, payment_id):
         payment = Payment.query.get(payment_id)
         data = request.get_json()
@@ -235,14 +278,14 @@ class PaymentByID(Resource):
         db.session.commit()
         return payment.to_dict()
 
-    @token_required   
+    # @token_required
     def delete(self, payment_id):
         payment = Payment.query.get(payment_id)
         db.session.delete(payment)
         db.session.commit()
         return payment.to_dict()
-
-    @token_required
+    
+    # @token_required  
     def patch(self, payment_id):
         payment = Payment.query.get(payment_id)
         data = request.get_json()
@@ -250,221 +293,82 @@ class PaymentByID(Resource):
             setattr(payment, key, value)
         db.session.commit()
         return payment.to_dict()
-    
 
-class Spaces(Resource):
-    def get(self):
-      spaces = Space.query.all()
-      space_data = [space.to_dict() for space in spaces]
-      return make_response(jsonify(space_data), 200)
-    
-    def post(self):
+    # @token_required  
+    def post(self, payment_id):
+        payment = db.session.get(Payment, payment_id)
+        if not payment:
+            return {"error": "Payment not found"}, 404
+
         data = request.get_json()
-        title = data.get('username')
-        description = data.get('email')
-        location = data.get('password')
-        price_per_hour = data.get('balance')
-        status = data.get('status')
+        if not data:
+            return {"error": "No JSON data provided"}, 400
 
-        space = Space(
-            title=title,
-            description=description,
-            location=location,
-            price_per_hour=price_per_hour,
-            status=status,
-        )
-        db.session.add(space)
-        db.session.commit()
-        return space.to_dict()
+        payment_method = data.get('payment_method')
+        if not payment_method:
+            return {"error": "Payment method is required"}, 400
 
-class SpaceByID(Resource):
-    # @token_required
-    def get(self, space_id):
-        space = Space.query.get(space_id)
-        return [space.to_dict()]
-
-    @token_required   
-    def put(self, space_id):
-        space = Space.query.get(space_id)
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
-        db.session.commit()
-        return space.to_dict()
-
-    @token_required   
-    def delete(self, space_id):
-       space = Space.query.get(space_id)
-       db.session.delete(space)
-       db.session.commit()
-       return space.to_dict()
-
-    @token_required   
-    def patch(self, space_id):
-     space = Space.query.get(space_id)
-     data = request.get_json()
-     for key, value in data.items():
-        setattr(space, key, value)
-     db.session.commit()
-     return space.to_dict()
-    
-class Login(Resource):
-    
-    def post(self):
-
-        request_json = request.get_json()
-
-        name = request_json.get('name')
-        password = request_json.get('password')
-
-        user = User.query.filter(User.name == name).first()
-
-        if user:
-            if user.authenticate(password):
-                session['user_id'] = user.id
-                token = jwt.encode({'id': user.id, 'expiration': str(datetime.utcnow()+timedelta(days=5))}, app.config['SECRET_KEY'],algorithm="HS256")
-                return make_response({'user': user.to_dict(), 'token': token}, 200)
+        try:
+            if payment_method == 'mpesa':
+                return self.initiate_mpesa_payment(payment, data)
+            elif payment_method == 'paypal':
+                return self.initiate_paypal_payment(payment)
             else:
-                return {'error': 'Invalid Password'}, 401
+                return {"error": "Invalid payment method"}, 400
+        except Exception as e:
+            logging.error(f"Error processing payment: {str(e)}")
+            return {"error": "An error occurred while processing the payment", "details": str(e)}, 500
 
-        return {'error': 'Invalid Username'}, 401
+    # @token_required  
+    def initiate_mpesa_payment(self, payment, data):
+        phone_number = data.get('phone_number')
+        if not phone_number:
+            return {"error": "Phone number is required"}, 400
 
-class Logout(Resource):
+        phone_number = validate_and_format_phone_number(phone_number)
 
-    def delete(self):
+        access_token = get_oauth_token()
 
-        session['user_id'] = None
-        
-        return {}, 204
-
-class CheckSession(Resource):
- def get():
-    user_id = session.get('user_id')
-    if user_id:
-        user = User.query.filter(User.id == user_id).first()
-        if user:
-            return jsonify(user.to_dict()), 200
-        else:
-            return jsonify({"error": "User not found"}), 404
-    else:
-        return jsonify({"error": "Unauthorized"}), 401
-    
-    
-class Events(Resource):
-    def get(self):
-        events = Event.query.all()
-        event_data = [event.to_dict() for event in events]
-        return make_response(jsonify(event_data), 200)
-
-    def post(self):
-        data = request.get_json()
-        title = data.get('title')
-        description = data.get('description')
-        location = data.get('location')
-        date = data.get('date')
-        organizer_id = data.get('user_id')
-        space_id = data.get('space_id')   
-
-        event = Event(
-            title=title,
-            description=description,
-            location=location,
-            date=date,
-            organizer_id=organizer_id,
-            space_id=space_id)
-        db.session.add(event)
-        db.session.commit()
-        return make_response(event.to_dict())
-class EventByID(Resource):
-    def get(self, event_id):
-        event = Event.query.get(event_id)
-        return [event.to_dict()]
-
-    def patch(self, id):
-        event = Event.query.get(id)
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(event, key, value)
-        db.session.commit()
-        return make_response(event.to_dict())
-
-    def delete(self, id):
-        event = Event.query.get(id)
-        db.session.delete(event)
-        db.session.commit()
-        return make_response(event.to_dict())  
-    
-class SendEmail(Resource):
-    def post(self):
-        data = request.get_json()
-        to = data.get('to')
-
-        if not to:
-            return {"message": "Recipient email is required"}, 400
-
-        mailjet_api_key = 'c40b5166cf91591dfd94b42e4d944ec8'
-        mailjet_secret_key = '63d83d87e6f22984189b90a177907ce7'
-        mailjet_url = 'https://api.mailjet.com/v3.1/send'
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
 
         headers = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {access_token}'
         }
 
-        email_data = {
-            'Messages': [
-                {
-                    'From': {
-                        'Email': 'nickstech707@gmail.com',
-                        'Name': 'Spaces'
-                    },
-                    'To': [
-                        {
-                            'Email': to,
-                            'Name': 'Recipient Name'
-                        }
-                    ],
-                    'TemplateID': 6185052,  
-                    'TemplateLanguage': True,
-                    'Subject': 'Event Booking',
-                    'Variables': {
-                        'event_date': 'November 15th',
-                        'message': 'Attending a trade show...'
-                    }
-                }
-            ]
+        payload = {
+            "BusinessShortCode": int(shortcode),
+            "Password": password,
+            "Timestamp": timestamp,
+            "TransactionType": "CustomerPayBillOnline",
+            # "Amount": int(payment.amount),
+            "Amount": int(1),
+            "PartyA": int(phone_number),
+            "PartyB": int(shortcode),
+            "PhoneNumber": int(phone_number),
+            "CallBackURL": callback_url,
+            "AccountReference": f"Payment{payment.id}",
+            "TransactionDesc": f"Payment for order {payment.id}"
         }
 
-        response = requests.post(
-            mailjet_url,
-            headers=headers,
-            auth=(mailjet_api_key, mailjet_secret_key),
-            json=email_data
-        )
+        logging.debug(f"Payload: {payload}")
 
-        if response.status_code == 200:
-            return {"message": "Email sent"}, 200
-        else:
-            return {"message": "Failed to send email", "error": response.text}, response.status_code
+        try:
+            response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+                                     headers=headers,
+                                     json=payload)
+            response.raise_for_status()
 
-api.add_resource(SendEmail, '/api/send-email')
-api.add_resource(CheckSession, '/api/check_session')   
-api.add_resource(Payments, '/api/payments')
-api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
-api.add_resource(Reviews, '/api/reviews')
-api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
-api.add_resource(Users, '/api/users')
-api.add_resource(UserByID, '/api/users/<int:user_id>/')
-api.add_resource(Bookings, '/api/bookings')
-api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
-api.add_resource(Spaces, '/api/spaces>')
-api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
-api.add_resource(Login, '/api/login')
-api.add_resource(Logout, '/api/logout')
-api.add_resource(Events, '/api/events')
-api.add_resource(EventByID, '/api/events/<int:event_id>/')
+            logging.debug(f"M-Pesa API Response: {response.text}")
 
-if __name__ == '__main__':
-    app.run(port= 5555, debug=True)
-
-
-
+            if response.status_code == 200:
+                payment.status = 'pending'
+                payment.payment_method = 'mpesa'
+                db.session.commit()
+                return response.json(), 200
+            else:
+                return {"error": "M-Pesa request failed", "details": response.text}, response.status_code
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error making request to M-Pesa API: {str(e)}")
+            return {"error": "Failed to communicate with M-Pesa API", "details": str(e)}, 500

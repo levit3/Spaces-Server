@@ -10,6 +10,30 @@ from faker import Faker
 from sqlalchemy.orm import sessionmaker
 fake = Faker()
 
+def generate_unique_email(existing_emails):
+    email = fake.email()
+    while email in existing_emails:
+        email = fake.email()
+    existing_emails.add(email)
+    return email
+
+def seed_users():
+    existing_emails = set()
+    roles = [UserRole.USER, UserRole.TENANT]
+    num_users = 10  # Number of users you want to create
+
+    for _ in range(num_users):
+        email = generate_unique_email(existing_emails)
+        user = User(
+            name=fake.name(),
+            email=email,
+            password=fake.password(length=10),
+            role=rc(roles, 1)[0],
+            profile_picture="https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg"
+        )
+        db.session.add(user)
+
+    db.session.commit()
 
 if __name__ == '__main__':
     fake = Faker()
@@ -19,6 +43,8 @@ if __name__ == '__main__':
         # Drop and recreate all tables
         db.drop_all()
         db.create_all()
+
+
 
     #Create user data
         users =[]
