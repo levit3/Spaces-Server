@@ -421,3 +421,23 @@ class PaymentCancel(Resource):
         payment.status = 'cancelled'
         db.session.commit()
         return redirect("http://localhost:3000/payment", 302)
+    
+class PayPalExecutePayment(Resource):
+    # @token_required
+    def get(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        if not payment:
+            return {"error": "Payment not found"}, 404
+
+        paypal_payment_id = request.args.get('paymentId')
+        payer_id = request.args.get('PayerID')
+
+        paypal_payment = paypalrestsdk.Payment.find(paypal_payment_id)
+        if paypal_payment.execute({"payer_id": payer_id}):
+            payment.status = 'completed'
+            db.session.commit()
+            return {"message": "Payment completed successfully"}, 200
+        else:
+            payment.status = 'failed'
+            db.session.commit()
+            return {"error": "Payment execution failed"}, 400
