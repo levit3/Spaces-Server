@@ -372,3 +372,38 @@ class PaymentByID(Resource):
         except requests.exceptions.RequestException as e:
             logging.error(f"Error making request to M-Pesa API: {str(e)}")
             return {"error": "Failed to communicate with M-Pesa API", "details": str(e)}, 500
+        
+    # @token_required
+    def initiate_paypal_payment(self, payment):
+        paypal_payment = paypalrestsdk.Payment({
+            "intent": "sale",
+            "payer": {
+                "payment_method": "paypal"},
+            "redirect_urls": {
+                "return_url": f"http://127.0.0.1:5555/api/payment_success/{payment.id}",
+                "cancel_url": f"http://127.0.0.1:5555/api/payment_cancel/{payment.id}"},
+            "transactions": [{
+                "item_list": {
+                    "items": [{
+                        "name": f"Payment {payment.id}",
+                        "sku": f"PAYMENT-{payment.id}",
+                        "price": str(payment.amount),
+                        "currency": "USD",
+                        "quantity": 1}]},
+                "amount": {
+                    "total": str(payment.amount),
+                    "currency": "USD"},
+                "description": f"Payment for order {payment.id}"}]})
+
+        if paypal_payment.create():
+            payment.status = 'pending'
+            payment.payment_method = 'paypal'
+            payment.paypal_payment_id = paypal_payment.id
+            db.session.commit()
+
+            for link in paypal_payment.links:
+                if link.rel == "approval_url":
+                    approval_url = str(link.href)
+                    return {"approval_url": approval_url}, 200
+        else:
+            return {"error": paypal_payment.error}, 400
