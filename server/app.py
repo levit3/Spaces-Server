@@ -441,3 +441,216 @@ class PayPalExecutePayment(Resource):
             payment.status = 'failed'
             db.session.commit()
             return {"error": "Payment execution failed"}, 400
+        
+class MpesaCallback(Resource):
+    # @token_required
+    def post(self, payment_id):
+        data = request.get_json()
+        payment = Payment.query.get(payment_id)
+        if not payment:
+            return {"error": "Payment not found"}, 404
+
+        result_code = data.get('ResultCode')
+        if result_code == '0':
+            payment.status = 'completed'
+        else:
+            payment.status = 'failed'
+
+        payment.mpesa_receipt_number = data.get('MpesaReceiptNumber', '')
+        db.session.commit()
+
+        return {"ResultCode": "0", "ResultDesc": "Success"}, 200
+
+class Spaces(Resource):
+    def get(self):
+      spaces = Space.query.all()
+      space_data = [space.to_dict() for space in spaces]
+      return make_response(jsonify(space_data), 200)
+    
+    def post(self):
+        data = request.get_json()
+        title = data.get('username')
+        description = data.get('email')
+        location = data.get('password')
+        price_per_hour = data.get('balance')
+        status = data.get('status')
+
+        space = Space(
+            title=title,
+            description=description,
+            location=location,
+            price_per_hour=price_per_hour,
+            status=status,
+        )
+        db.session.add(space)
+        db.session.commit()
+        return space.to_dict()
+
+class SpaceByID(Resource):
+    # @token_required
+    def get(self, space_id):
+        space = Space.query.get(space_id)
+        return [space.to_dict()]
+
+    # @token_required   
+    def put(self, space_id):
+        space = Space.query.get(space_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(space, key, value)
+        db.session.commit()
+        return space.to_dict()
+
+    # @token_required   
+    def delete(self, space_id):
+       space = Space.query.get(space_id)
+       db.session.delete(space)
+       db.session.commit()
+       return space.to_dict()
+
+    # @token_required   
+    def patch(self, space_id):
+     space = Space.query.get(space_id)
+     data = request.get_json()
+     for key, value in data.items():
+        setattr(space, key, value)
+     db.session.commit()
+     return space.to_dict()
+    
+class Login(Resource):
+    
+    def post(self):
+
+        request_json = request.get_json()
+
+        name = request_json.get('name')
+        password = request_json.get('password')
+
+        user = User.query.filter(User.name == name).first()
+
+        if user:
+            if user.authenticate(password):
+                session['user_id'] = user.id
+                token = jwt.encode({'id': user.id, 'expiration': str(datetime.utcnow()+timedelta(days=5))}, app.config['SECRET_KEY'],algorithm="HS256")
+                return make_response({'user': user.to_dict(), 'token': token}, 200)
+            else:
+                return {'error': 'Invalid Password'}, 401
+
+        return {'error': 'Invalid Username'}, 401
+
+class Logout(Resource):
+
+    def delete(self):
+
+        session['user_id'] = None
+        
+        return {}, 204
+
+class CheckSession(Resource):
+ def get():
+    user_id = session.get('user_id')
+    if user_id:
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            return jsonify(user.to_dict()), 200
+        else:
+            return jsonify({"error": "User not found"}), 404
+    else:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    
+class Events(Resource):
+    def get(self):
+        events = Event.query.all()
+        event_data = [event.to_dict() for event in events]
+        return make_response(jsonify(event_data), 200)
+
+    def post(self):
+        data = request.get_json()
+        title = data.get('title')
+        description = data.get('description')
+        location = data.get('location')
+        date = data.get('date')
+        organizer_id = data.get('user_id')
+        space_id = data.get('space_id')   
+
+        event = Event(
+            title=title,
+            description=description,
+            location=location,
+            date=date,
+            organizer_id=organizer_id,
+            space_id=space_id)
+        db.session.add(event)
+        db.session.commit()
+        return make_response(event.to_dict())
+class EventByID(Resource):
+    def get(self, event_id):
+        event = Event.query.get(event_id)
+        return [event.to_dict()]
+
+    def patch(self, id):
+        event = Event.query.get(id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(event, key, value)
+        db.session.commit()
+        return make_response(event.to_dict())
+
+    def delete(self, id):
+        event = Event.query.get(id)
+        db.session.delete(event)
+        db.session.commit()
+        return make_response(event.to_dict())  
+    
+class SendEmail(Resource):
+    def post(self):
+        data = request.get_json()
+        to = data.get('to')
+
+        if not to:
+            return {"message": "Recipient email is required"}, 400
+
+        mailjet_api_key = 'c40b5166cf91591dfd94b42e4d944ec8'
+        mailjet_secret_key = '63d83d87e6f22984189b90a177907ce7'
+        mailjet_url = 'https://api.mailjet.com/v3.1/send'
+
+        headers = {
+            'Content-Type': 'application/json'
+        }
+
+        email_data = {
+            'Messages': [
+                {
+                    'From': {
+                        'Email': 'nickstech707@gmail.com',
+                        'Name': 'Spaces'
+                    },
+                    'To': [
+                        {
+                            'Email': to,
+                            'Name': 'Recipient Name'
+                        }
+                    ],
+                    'TemplateID': 6185052,  
+                    'TemplateLanguage': True,
+                    'Subject': 'Event Booking',
+                    'Variables': {
+                        'event_date': 'November 15th',
+                        'message': 'Attending a trade show...'
+                    }
+                }
+            ]
+        }
+
+        response = requests.post(
+            mailjet_url,
+            headers=headers,
+            auth=(mailjet_api_key, mailjet_secret_key),
+            json=email_data
+        )
+
+        if response.status_code == 200:
+            return {"message": "Email sent"}, 200
+        else:
+            return {"message": "Failed to send email", "error": response.text}, response.status_code

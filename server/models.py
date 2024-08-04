@@ -182,7 +182,44 @@ class ReviewImage(db.Model, SerializerMixin):
         return f'<ReviewImage {self.image_url}>'
 
 ## Payments
+    amount = db.Column(db.Float, nullable=False)
+    mpesa_receipt_number = db.Column(db.String(100))
+    paypal_payment_id = db.Column(db.String(100))
+    payment_method = db.Column(db.String, nullable=False)
+    payment_status = db.Column(db.String, nullable=False)
+    created_at = db.Column(db.DateTime, default=func.now())
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  
 
+    serialize_rules = ['-booking.payments', '-booking.user.spaces', '-booking.user.reviews']
+
+    booking = db.relationship("Booking", back_populates="payment")
+    user = db.relationship('User', back_populates='payments')  
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'amount': self.amount,
+            'status': self.status,
+            'payment_method': self.payment_method,
+            'mpesa_receipt_number': self.mpesa_receipt_number,
+            'paypal_payment_id': self.paypal_payment_id
+        }
+
+    def __repr__(self):
+        return f"<Payment(id={self.id}, booking_id={self.booking_id}, amount={self.amount}, payment_method='{self.payment_method}', payment_status='{self.payment_status}', created_at={self.created_at}), mpesa_receipt_number={self.mpesa_receipt_number}, paypal_payment_id={self.paypal_payment_id}>"
+
+    @validates('booking_id')
+    def validate_booking_id(self, key, booking_id):
+        booking = Booking.query.get(booking_id)
+        if not booking:
+            raise ValueError('Booking does not exist')
+        return booking_id
+
+    @validates('amount')
+    def validate_amount(self, key, amount):
+        if amount < 0:
+            raise ValueError('Amount must be greater than 0')
+        return amount
 class Payment(db.Model, SerializerMixin):
     __tablename__ = 'payments'
 
