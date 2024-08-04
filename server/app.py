@@ -654,3 +654,27 @@ class SendEmail(Resource):
             return {"message": "Email sent"}, 200
         else:
             return {"message": "Failed to send email", "error": response.text}, response.status_code
+        
+
+api.add_resource(MpesaCallback, '/api/callback/<int:payment_id>/')
+api.add_resource(PaymentSuccess, '/api/payment_success/<int:payment_id>')
+api.add_resource(PaymentCancel, '/api/payment_cancel/<int:payment_id>')
+api.add_resource(SendEmail, '/api/send-email')
+api.add_resource(CheckSession, '/api/check_session')   
+api.add_resource(Payments, '/api/payments')
+api.add_resource(PaymentByID, '/api/payments/<int:payment_id>/')
+api.add_resource(Reviews, '/api/reviews')
+api.add_resource(ReviewByID, '/api/reviews/<int:review_id>/')
+api.add_resource(Users, '/api/users')
+api.add_resource(UserByID, '/api/users/<int:user_id>/')
+api.add_resource(Bookings, '/api/bookings')
+api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
+api.add_resource(Spaces, '/api/spaces>')
+api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
+api.add_resource(Login, '/api/login')
+api.add_resource(Logout, '/api/logout')
+api.add_resource(Events, '/api/events')
+api.add_resource(EventByID, '/api/events/<int:event_id>/')
+
+if __name__ == '__main__':
+    app.run(port= 5555, debug=True)
