@@ -134,7 +134,7 @@ class Booking(db.Model, SerializerMixin):
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
 
-    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review')
+    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review', '-space.events', '-space.bookings', '-user.bookings')
 
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
@@ -211,7 +211,7 @@ class Payment(db.Model, SerializerMixin):
         return {
             'id': self.id,
             'amount': self.amount,
-            'status': self.status,
+            # 'status': self.status,
             'payment_method': self.payment_method,
             'mpesa_receipt_number': self.mpesa_receipt_number,
             'paypal_payment_id': self.paypal_payment_id
