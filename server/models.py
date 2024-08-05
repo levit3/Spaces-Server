@@ -134,7 +134,7 @@ class Booking(db.Model, SerializerMixin):
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
 
-    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review')
+    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review', '-space.events', '-space.bookings', '-user.bookings')
 
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
