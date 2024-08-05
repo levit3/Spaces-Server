@@ -18,8 +18,11 @@ psycopg2-binary = "*"
 jwt = "*"
 cloudinary = "*"
 pytest = "*"
+pyjwt = "*"
+requests = "*"
+paypalrestsdk = "*"
 
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "*"
