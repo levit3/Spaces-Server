@@ -203,7 +203,7 @@ class PaymentByID(Resource):
         payment = Payment.query.get(payment_id)
         return payment.to_dict()
 
-    @token_required      
+    #@token_required      
     def put(self, payment_id):
         payment = Payment.query.get(payment_id)
         data = request.get_json()
