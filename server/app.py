@@ -179,34 +179,22 @@ class UserByID(Resource):
     
 
 
+
 class Reviews(Resource):
+     
     def get(self):
-        review = Review.query.all()
-        return review.to_dict()
+        reviews = Review.query.all()
+        return [review.to_dict() for review in reviews]
     
+    # @token_required  
     def post(self):
-        data = request.json
-        review = Review(comment=data['comment'], rating=data['rating'], user_id=data['user_id'], space_id=data['space_id'])    
-        db.session.add(review)
-        db.session.commit()
-        return review.to_dict()
-class ReviewByID(Resource):
-    def get(self, review_id):
-        review = Review.query.get_or_404(review_id)
-        return review.to_dict(), 200
-    
-    # @token_required
-    def put(self, review_id):
-        review = Review.query.get_or_404(review_id)
         data = request.form
-        images = request.files.getlist('images')  
-        
+        images = request.files.getlist('images')
+
         try:
-            
-            for key, value in data.items():
-                setattr(review, key, value)
-            
-            
+            review = Review(comment=data['comment'], rating=data['rating'], user_id=data['user_id'], space_id=data['space_id'])
+            db.session.add(review)
+
             if images:
                 for image in images:
                     upload_result = cloudinary.uploader.upload(image)
@@ -218,25 +206,21 @@ class ReviewByID(Resource):
         except ValueError as e:
             return {'error': str(e)}, 400
 
-    # @token_required
-    def delete(self, review_id):
+class ReviewByID(Resource):
+    def get(self, review_id):
         review = Review.query.get_or_404(review_id)
-        db.session.delete(review)
-        db.session.commit()
-        return {'message': 'Review deleted'}, 200
-    
-    # @token_required
-    def patch(self, review_id):
+        return review.to_dict(), 200
+
+    # @token_required  
+    def put(self, review_id):
         review = Review.query.get_or_404(review_id)
         data = request.form
-        images = request.files.getlist('images') 
-        
+        images = request.files.getlist('images')
+
         try:
-            
             for key, value in data.items():
                 setattr(review, key, value)
-            
-            
+
             if images:
                 for image in images:
                     upload_result = cloudinary.uploader.upload(image)
@@ -678,3 +662,5 @@ api.add_resource(EventByID, '/api/events/<int:event_id>/')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)
+
+

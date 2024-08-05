@@ -99,6 +99,8 @@ class Space(db.Model, SerializerMixin):
 class SpaceImages(db.Model, SerializerMixin):
     __tablename__ = 'space_images'
 
+    serialize_rules = ('-space_images',)
+
     id = db.Column(db.Integer, primary_key=True)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
     image_url = db.Column(db.String, nullable=False)
@@ -129,12 +131,10 @@ class Booking(db.Model, SerializerMixin):
     payment = db.relationship('Payment', back_populates='booking')
     space = db.relationship('Space', back_populates='bookings')
 
-# Reviews
-
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
 
-    serialize_rules = ['-space.reviews', '-user.reviews', '-space.user']
+    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review')
 
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
@@ -152,8 +152,12 @@ class Review(db.Model, SerializerMixin):
 
     @validates('rating')
     def validate_rating(self, key, rating):
-        if not (1 <= rating <= 5):
-            raise ValueError('Rating must be between 1 and 5')
+        try:
+            rating = int(rating)
+            if not (1 <= rating <= 5):
+                raise ValueError("Rating must be between 1 and 5")
+        except ValueError:
+            raise ValueError("Rating must be a valid integer between 1 and 5")
         return rating
 
     @validates('space_id')
@@ -172,6 +176,8 @@ class Review(db.Model, SerializerMixin):
 class ReviewImage(db.Model, SerializerMixin):
     __tablename__ = 'review_images'
 
+    serialize_rules = ('-review.images',)
+
     id = db.Column(db.Integer, primary_key=True)
     review_id = db.Column(db.Integer, db.ForeignKey('reviews.id'), nullable=False)
     image_url = db.Column(db.String, nullable=False)
@@ -182,6 +188,12 @@ class ReviewImage(db.Model, SerializerMixin):
         return f'<ReviewImage {self.image_url}>'
 
 ## Payments
+
+class Payment(db.Model, SerializerMixin):
+    __tablename__ = 'payments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey('bookings.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     mpesa_receipt_number = db.Column(db.String(100))
     paypal_payment_id = db.Column(db.String(100))
@@ -220,12 +232,6 @@ class ReviewImage(db.Model, SerializerMixin):
         if amount < 0:
             raise ValueError('Amount must be greater than 0')
         return amount
-class Payment(db.Model, SerializerMixin):
-    __tablename__ = 'payments'
-
-    id = db.Column(db.Integer, primary_key=True)
-    booking_id = db.Column(db.Integer, db.ForeignKey('bookings.id'), nullable=False)
-
 
 class Event(db.Model, SerializerMixin):
     __tablename__ = 'events'
