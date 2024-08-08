@@ -98,21 +98,33 @@ def token_required(func):
 
 class Bookings(Resource):
     def get(self):
-        booking = Booking.query.all()
-        return booking.to_dict()
-    
+        bookings = Booking.query.all()
+        booking_data = [
+            {
+                'id': booking.id,
+                'user_id': booking.user_id,
+                'total_price': booking.total_price,
+                'status': booking.status,
+                'created_at': booking.created_at,
+                'updated_at': booking.updated_at,
+                'space_id': booking.space.id,
+                'space_title': booking.space.title
+            } for booking in bookings
+        ]
+        return make_response(jsonify(booking_data), 200)
     def post(self):
         data = request.json
         booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
         db.session.add(booking)
         db.session.commit()
-        return booking.to_dict()
+        return make_response(booking.to_dict(),200)
         
     
 class BookingByID(Resource):
     def get(self, booking_id):
         booking = Booking.query.filter_by(id=booking_id).first()
-        return booking.to_dict()
+
+        return make_response(booking.to_dict(),200)
     
     def put(self, booking_id):
         booking = Booking.query.get(booking_id)
@@ -120,13 +132,13 @@ class BookingByID(Resource):
         for key, value in data.items():
             setattr(booking, key, value)
         db.session.commit()
-        return booking.to_dict()
+        return make_response(booking.to_dict(),200)
 
     def delete(self, booking_id):
         booking = Booking.query.get(booking_id)
         db.session.delete(booking)
         db.session.commit()
-        return booking.to_dict()
+        return make_response(booking.to_dict(),200)
 
     def patch(self, booking_id):
         booking = Booking.query.get(booking_id)
@@ -134,7 +146,7 @@ class BookingByID(Resource):
         for key, value in data.items():
             setattr(booking, key, value)
         db.session.commit()
-        return booking.to_dict()
+        return make_response(booking.to_dict(),200)
 
 
 class Users(Resource):
@@ -553,25 +565,28 @@ class Events(Resource):
         data = request.get_json()
         title = data.get('title')
         description = data.get('description')
-        location = data.get('location')
         date = data.get('date')
-        organizer_id = data.get('user_id')
-        space_id = data.get('space_id')   
+        organizer_id = 92
+        space_id = data.get('space_id')
+
+        # Check if organizer_id is present
+        if not organizer_id:
+            return make_response({"error": "User is not logged in or session has expired"}, 400)
 
         event = Event(
             title=title,
             description=description,
-            location=location,
             date=date,
             organizer_id=organizer_id,
             space_id=space_id)
         db.session.add(event)
         db.session.commit()
-        return make_response(event.to_dict())
+        return make_response(event.to_dict(), 201)
+    
 class EventByID(Resource):
     def get(self, event_id):
         event = Event.query.get(event_id)
-        return [event.to_dict()]
+        return make_response(event.to_dict(),200)
 
     def patch(self, id):
         event = Event.query.get(id)
@@ -579,13 +594,13 @@ class EventByID(Resource):
         for key, value in data.items():
             setattr(event, key, value)
         db.session.commit()
-        return make_response(event.to_dict())
+        return make_response(event.to_dict(),200)
 
     def delete(self, id):
         event = Event.query.get(id)
         db.session.delete(event)
         db.session.commit()
-        return make_response(event.to_dict())  
+        return make_response(event.to_dict(),200)  
     
 class SendEmail(Resource):
     def post(self):
@@ -662,5 +677,3 @@ api.add_resource(EventByID, '/api/events/<int:event_id>/')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)
-
-

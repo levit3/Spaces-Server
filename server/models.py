@@ -9,7 +9,7 @@ import enum
 from sqlalchemy import func
 from config import db, bcrypt
 import re
-import datetime
+from datetime import datetime
 
 class UserRole(enum.Enum):
     USER = "user"
@@ -279,6 +279,8 @@ class Event(db.Model, SerializerMixin):
 
     @validates('date')
     def validate_date(self, key, date):
-        if date < datetime.date.today():
-            raise ValueError('Date must be in the future')
+        if isinstance(date, str):
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        if date < datetime.today().date():
+            raise ValueError("Event date cannot be in the past")
         return date
