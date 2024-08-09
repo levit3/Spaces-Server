@@ -35,6 +35,7 @@ def seed_users():
 
     db.session.commit()
 
+
 if __name__ == '__main__':
     fake = Faker()
     with app.app_context():
@@ -59,6 +60,8 @@ if __name__ == '__main__':
         print("User data seeded successfully")
 
         #Create space data
+
+
         spaces = []
         tenants = User.query.filter_by(role='TENANT').all()
         for _ in range(50):
@@ -69,7 +72,7 @@ if __name__ == '__main__':
         db.session.commit()
         print("Space data seeded successfully")
 
-        #Create booking data
+        # Create booking data
         bookings = []
         users = User.query.filter_by(role='USER').all()
         for _ in range(1, 201):
