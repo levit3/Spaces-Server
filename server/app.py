@@ -448,17 +448,18 @@ class MpesaCallback(Resource):
 
 class Spaces(Resource):
     def get(self):
-      spaces = Space.query.all()
-      space_data = [space.to_dict() for space in spaces]
-      return make_response(jsonify(space_data), 200)
+        spaces = Space.query.all()
+        space_data = [space.to_dict() for space in spaces]
+        return make_response(jsonify(space_data), 200)
     
     def post(self):
         data = request.get_json()
-        title = data.get('username')
-        description = data.get('email')
-        location = data.get('password')
-        price_per_hour = data.get('balance')
+        title = data.get('title')
+        description = data.get('description')
+        location = data.get('location')
+        price_per_hour = data.get('price_per_hour')
         status = data.get('status')
+        category = data.get('category')  
 
         space = Space(
             title=title,
@@ -466,42 +467,45 @@ class Spaces(Resource):
             location=location,
             price_per_hour=price_per_hour,
             status=status,
+            category=category  
         )
         db.session.add(space)
         db.session.commit()
-        return space.to_dict()
-
+        return space.to_dict(), 201
 class SpaceByID(Resource):
-    # @token_required
     def get(self, space_id):
         space = Space.query.get(space_id)
-        return [space.to_dict()]
+        if space is None:
+            return {"message": "Space not found"}, 404
+        return space.to_dict(), 200
 
-    # @token_required   
     def put(self, space_id):
         space = Space.query.get(space_id)
+        if space is None:
+            return {"message": "Space not found"}, 404
         data = request.get_json()
         for key, value in data.items():
             setattr(space, key, value)
         db.session.commit()
-        return space.to_dict()
+        return space.to_dict(), 200
 
-    # @token_required   
     def delete(self, space_id):
-       space = Space.query.get(space_id)
-       db.session.delete(space)
-       db.session.commit()
-       return space.to_dict()
+        space = Space.query.get(space_id)
+        if space is None:
+            return {"message": "Space not found"}, 404
+        db.session.delete(space)
+        db.session.commit()
+        return {"message": "Space deleted successfully"}, 200
 
-    # @token_required   
     def patch(self, space_id):
-     space = Space.query.get(space_id)
-     data = request.get_json()
-     for key, value in data.items():
-        setattr(space, key, value)
-     db.session.commit()
-     return space.to_dict()
-    
+        space = Space.query.get(space_id)
+        if space is None:
+            return {"message": "Space not found"}, 404
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(space, key, value)
+        db.session.commit()
+        return space.to_dict(), 200   
 class Login(Resource):
     
     def post(self):
