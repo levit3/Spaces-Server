@@ -60,19 +60,36 @@ if __name__ == '__main__':
         print("User data seeded successfully")
 
         #Create space data
-
-
+        categories = [
+        "Meeting Room",
+        "Event Venue",
+        "Creative Studio",
+        "Pop-Up Shop",
+        "Workshop Space",
+        "Outdoor Venue",
+        "Private Dining Room"
+        ]
         spaces = []
         tenants = User.query.filter_by(role='TENANT').all()
         for _ in range(50):
             tenant = choice(tenants)
-            space = Space(title=fake.company(), description=fake.text(max_nb_chars=200), location=fake.city(), price_per_hour=randint(10, 300), status=rc(["available", "unavailable"], k=1)[0], tenant_id=tenant.id)
+            category = choice(categories)  
+            space = Space(
+                title=fake.company(),
+                description=fake.text(max_nb_chars=200),
+                location=fake.city(),
+                price_per_hour=randint(10, 300),
+                status=choice(["available", "unavailable"]),
+                category=category,  
+                tenant_id=tenant.id
+            )
             spaces.append(space)
+
         db.session.add_all(spaces)
         db.session.commit()
         print("Space data seeded successfully")
 
-        # Create booking data
+        #Create booking data
         bookings = []
         users = User.query.filter_by(role='USER').all()
         for _ in range(1, 201):
