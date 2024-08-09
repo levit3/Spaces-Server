@@ -17,7 +17,6 @@ class UserRole(enum.Enum):
     ADMIN = "admin"
 
 ## Users
-
 class User(SerializerMixin, db.Model):
     __tablename__ = 'users'
 
@@ -64,13 +63,12 @@ class User(SerializerMixin, db.Model):
 
     @validates('email')
     def validate_email(self, key, email):
-        if not re.match(r"[^@]+@[^@]+.[^@]+", email):
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             raise ValueError('Invalid email address')
         existing_email = User.query.filter_by(email=email).first()
         if existing_email:
             raise ValueError('Email already exists')
         return email
-
 
 ## Spaces
 class Space(db.Model, SerializerMixin):

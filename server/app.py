@@ -6,7 +6,7 @@ import jwt
 import requests
 from functools import wraps
 from datetime import datetime, timedelta
-from config import app, db, api
+from config import app, db, api, bcrypt
 from models import User, Review, Space, Payment ,Booking, ReviewImage, Event
 import cloudinary.uploader
 import cloudinary.api
@@ -506,6 +506,41 @@ class SpaceByID(Resource):
             setattr(space, key, value)
         db.session.commit()
         return space.to_dict(), 200   
+    
+class Signup(Resource):
+    def post(self):
+        request_json = request.get_json()
+        username = request_json.get('username')
+        email = request_json.get('email')
+        password = request_json.get('password')
+        confirm_password = request_json.get('confirm_password')
+
+        
+        if password != confirm_password:
+            return {'error': 'Passwords do not match'}, 400
+
+        
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return {'error': 'Email already in use'}, 400
+
+        
+        password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
+        new_user = User(username=username, email=email, password=password_hash)
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': str(e)}, 500
+
+        token = jwt.encode({
+            'id': new_user.id,
+            'expiration': str(datetime.utcnow() + timedelta(days=5))
+        }, app.config['SECRET_KEY'], algorithm="HS256")
+
+        return make_response({'user': new_user.to_dict(), 'token': token}, 201)
 class Login(Resource):
     
     def post(self):
@@ -660,6 +695,7 @@ api.add_resource(Bookings, '/api/bookings')
 api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
 api.add_resource(Spaces, '/api/spaces>')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
+api.add_resource(Signup, '/api/signup')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
 api.add_resource(Events, '/api/events')

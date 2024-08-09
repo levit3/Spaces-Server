@@ -20,7 +20,7 @@ def generate_unique_email(existing_emails):
 def seed_users():
     existing_emails = set()
     roles = [UserRole.USER, UserRole.TENANT]
-    num_users = 10  # Number of users you want to create
+    num_users = 10 
 
     for _ in range(num_users):
         email = generate_unique_email(existing_emails)
