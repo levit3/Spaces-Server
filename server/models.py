@@ -17,6 +17,7 @@ class UserRole(enum.Enum):
     ADMIN = "admin"
 
 ## Users
+
 class User(SerializerMixin, db.Model):
     __tablename__ = 'users'
 
@@ -27,7 +28,7 @@ class User(SerializerMixin, db.Model):
     _password = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
     profile_picture = db.Column(db.String)
-    role = db.Column(db.Enum(UserRole), nullable=False)
+    role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
 
     spaces = db.relationship('Space', back_populates='user')
     reviews = db.relationship("Review", back_populates='user')

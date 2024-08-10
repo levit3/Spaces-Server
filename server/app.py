@@ -15,7 +15,8 @@ import base64
 import paypalrestsdk
 from flask_cors import CORS
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
+
 import re
 import logging
 
@@ -145,31 +146,33 @@ class Users(Resource):
     
 
 class UserByID(Resource):
-    # @token_required
-    def get(self, user_id):
-    # def get(self, user_id, current_user):
-        # if current_user.id != user_id:
-        #     return jsonify({'message': 'Unauthorized'}), 403
+    @token_required
+    # def get(self, user_id):
+    def get(self, user_id, current_user):
+        if current_user.id != user_id:
+            return jsonify({'message': 'Unauthorized'}), 403
         user = User.query.filter_by(id = user_id).first()
         return make_response(user.to_dict(), 200)
     
-    # @token_required      
+    @token_required      
     def put(self, user_id):
         user = User.query.get(user_id)
         data = request.get_json()
+        if 'password' in data:
+            user.password = data.pop('password') 
         for key, value in data.items():
             setattr(user, key, value)
         db.session.commit()
         return user.to_dict()
 
-    # @token_required      
+    @token_required      
     def delete(self, user_id):
         user = User.query.get(user_id)
         db.session.delete(user)
         db.session.commit()
         return user.to_dict()
     
-    # @token_required      
+    @token_required      
     def patch(self, user_id):
         user = User.query.get(user_id)
         data = request.get_json()
@@ -510,47 +513,93 @@ class SpaceByID(Resource):
 class Signup(Resource):
     def post(self):
         request_json = request.get_json()
-        username = request_json.get('username')
+        name = request_json.get('name')
         email = request_json.get('email')
         password = request_json.get('password')
-        confirm_password = request_json.get('confirm_password')
+        confirm_password = request_json.get('confirmPassword')
 
         
         if password != confirm_password:
             return {'error': 'Passwords do not match'}, 400
 
-        
+       
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return {'error': 'Email already in use'}, 400
 
+        default_profile_pic_url = "https://i.pinimg.com/236x/6c/74/25/6c74255c82ac875ba9321bb44757407f.jpg"
         
-        password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
-        new_user = User(username=username, email=email, password=password_hash)
+        user = User(name=name, email=email, profile_picture=default_profile_pic_url)
+        user.password = password         
+ 
 
         try:
-            db.session.add(new_user)
+            db.session.add(user)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            return {'error': str(e)}, 500
+
+        
+        token = jwt.encode({
+            'id': user.id,
+            'expiration': str(datetime.utcnow() + timedelta(days=5))
+        }, app.config['SECRET_KEY'], algorithm="HS256")
+
+        
+        response = {
+            'user': user.to_dict(),
+            'token': token
+        }
+        return make_response(response, 201)
+class Signup(Resource):
+    def post(self):
+        request_json = request.get_json()
+        name = request_json.get('name')
+        email = request_json.get('email')
+        password = request_json.get('password')
+        confirm_password = request_json.get('confirmPassword')
+
+        if password != confirm_password:
+            return {'error': 'Passwords do not match'}, 400
+
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return {'error': 'Email already in use'}, 400
+
+        # Set a default profile picture URL
+        default_profile_pic_url = "path/to/default/profile_pic.jpg"
+        
+        user = User(name=name, email=email, profile_picture=default_profile_pic_url)
+        user.password = password 
+
+        try:
+            db.session.add(user)
             db.session.commit()
         except Exception as e:
             db.session.rollback()
             return {'error': str(e)}, 500
 
         token = jwt.encode({
-            'id': new_user.id,
+            'id': user.id,
             'expiration': str(datetime.utcnow() + timedelta(days=5))
         }, app.config['SECRET_KEY'], algorithm="HS256")
 
-        return make_response({'user': new_user.to_dict(), 'token': token}, 201)
+        response = {
+            'user': user.to_dict(),
+            'token': token
+        }
+        return make_response(response, 201)
 class Login(Resource):
     
     def post(self):
 
         request_json = request.get_json()
 
-        name = request_json.get('name')
+        email = request_json.get('email')
         password = request_json.get('password')
 
-        user = User.query.filter(User.name == name).first()
+        user = User.query.filter(User.email == email).first()
 
         if user:
             if user.authenticate(password):
@@ -560,7 +609,7 @@ class Login(Resource):
             else:
                 return {'error': 'Invalid Password'}, 401
 
-        return {'error': 'Invalid Username'}, 401
+        return {'error': 'Invalid email'}, 401
 
 class Logout(Resource):
 
