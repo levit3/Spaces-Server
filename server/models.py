@@ -211,7 +211,6 @@ class Payment(db.Model, SerializerMixin):
         return {
             'id': self.id,
             'amount': self.amount,
-            'status': self.status,
             'payment_method': self.payment_method,
             'mpesa_receipt_number': self.mpesa_receipt_number,
             'paypal_payment_id': self.paypal_payment_id

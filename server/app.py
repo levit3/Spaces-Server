@@ -18,6 +18,7 @@ import requests
 from datetime import datetime
 import re
 import logging
+from werkzeug.exceptions import BadRequest
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -98,8 +99,9 @@ def token_required(func):
 
 class Bookings(Resource):
     def get(self):
-        booking = Booking.query.all()
-        return booking.to_dict()
+        booking_arr = Booking.query.all()
+        bookings = [booking.to_dict() for booking in booking_arr]
+        return make_response(bookings, 200)
     
     def post(self):
         data = request.json
@@ -450,26 +452,46 @@ class Spaces(Resource):
       spaces = Space.query.all()
       space_data = [space.to_dict() for space in spaces]
       return make_response(jsonify(space_data), 200)
-    
+  
     def post(self):
-        data = request.get_json()
-        title = data.get('username')
-        description = data.get('email')
-        location = data.get('password')
-        price_per_hour = data.get('balance')
-        status = data.get('status')
+        try:
+            data = request.json
+            print(data)
 
-        space = Space(
-            title=title,
-            description=description,
-            location=location,
-            price_per_hour=price_per_hour,
-            status=status,
-        )
-        db.session.add(space)
-        db.session.commit()
-        return space.to_dict()
+            if not all(key in data for key in ('title', 'description', 'location', 'price_per_hour', 'status',' tenant_id')):
+                raise BadRequest("Missing required fields")
 
+            title = data.get('title')
+            description = data.get('description')
+            location = data.get('location')
+            price_per_hour = data.get('price_per_hour')
+            status = data.get('status')
+            tenant_id = data.get('tenant_id')
+
+            if not isinstance(price_per_hour, (int, float)) or price_per_hour <= 0:
+                raise BadRequest("Invalid price_per_hour")
+
+            space = Space(
+                title=title,
+                description=description,
+                location=location,
+                price_per_hour=price_per_hour,
+                status=status,
+                tenant_id=tenant_id
+            )
+            print('past creation')
+            db.session.add(space)
+            db.session.commit()
+            print('past commit')
+
+            return make_response(space.to_dict())
+
+        except BadRequest as e:
+            return jsonify({"error": str(e)}), 400
+
+        except Exception as e:
+            db.session.rollback() 
+            return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 class SpaceByID(Resource):
     # @token_required
     def get(self, space_id):
@@ -571,7 +593,7 @@ class Events(Resource):
 class EventByID(Resource):
     def get(self, event_id):
         event = Event.query.get(event_id)
-        return [event.to_dict()]
+        return make_response(event.to_dict())
 
     def patch(self, id):
         event = Event.query.get(id)
@@ -653,7 +675,7 @@ api.add_resource(Users, '/api/users')
 api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')
 api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
-api.add_resource(Spaces, '/api/spaces>')
+api.add_resource(Spaces, '/api/spaces')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
