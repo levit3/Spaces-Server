@@ -558,16 +558,12 @@ class Signup(Resource):
         name = request_json.get('name')
         email = request_json.get('email')
         password = request_json.get('password')
-        confirm_password = request_json.get('confirmPassword')
-
-        if password != confirm_password:
-            return {'error': 'Passwords do not match'}, 400
 
         existing_user = User.query.filter_by(email=email).first()
         if existing_user:
             return {'error': 'Email already in use'}, 400
 
-        # Set a default profile picture URL
+       
         default_profile_pic_url = "path/to/default/profile_pic.jpg"
         
         user = User(name=name, email=email, profile_picture=default_profile_pic_url)
