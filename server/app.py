@@ -148,7 +148,7 @@ class Users(Resource):
     
 
 class UserByID(Resource):
-    # @token_required
+    #@token_required
     def get(self, user_id):
         # if current_user.id != user_id:
         #     return jsonify({'message': 'Unauthorized'}), 403
@@ -494,35 +494,42 @@ class Spaces(Resource):
             db.session.rollback() 
             return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 class SpaceByID(Resource):
-    # @token_required
     def get(self, space_id):
         space = Space.query.get(space_id)
-        return [space.to_dict()]
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        return make_response(jsonify(space.to_dict()), 200)
 
-    # @token_required   
     def put(self, space_id):
         space = Space.query.get(space_id)
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        
         data = request.get_json()
         for key, value in data.items():
             setattr(space, key, value)
         db.session.commit()
-        return space.to_dict()
+        return make_response(jsonify(space.to_dict()), 200)
 
-    # @token_required   
     def delete(self, space_id):
-       space = Space.query.get(space_id)
-       db.session.delete(space)
-       db.session.commit()
-       return space.to_dict()
+        space = Space.query.get(space_id)
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        
+        db.session.delete(space)
+        db.session.commit()
+        return make_response(jsonify(space.to_dict()), 200)
 
-    # @token_required   
     def patch(self, space_id):
-     space = Space.query.get(space_id)
-     data = request.get_json()
-     for key, value in data.items():
-        setattr(space, key, value)
-     db.session.commit()
-     return space.to_dict()
+        space = Space.query.get(space_id)
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(space, key, value)
+        db.session.commit()
+        return make_response(jsonify(space.to_dict()), 200)
     
 class Login(Resource):
     
