@@ -21,7 +21,7 @@ def generate_unique_email(existing_emails):
 def seed_users():
     existing_emails = set()
     roles = [UserRole.USER, UserRole.TENANT]
-    num_users = 10  # Number of users you want to create
+    num_users = 10 
 
     for _ in range(num_users):
         email = generate_unique_email(existing_emails)
@@ -35,6 +35,7 @@ def seed_users():
         db.session.add(user)
 
     db.session.commit()
+
 
 if __name__ == '__main__':
     fake = Faker()
@@ -64,7 +65,16 @@ if __name__ == '__main__':
         db.session.commit()
         print(f"User data seeded successfully. Total users: {len(users)}")
 
-        # Create space data
+        #Create space data
+        categories = [
+        "Meeting Room",
+        "Event Venue",
+        "Creative Studio",
+        "Pop-Up Shop",
+        "Workshop Space",
+        "Outdoor Venue",
+        "Private Dining Room"
+        ]
         spaces = []
         space_list = [
     {
@@ -426,6 +436,7 @@ if __name__ == '__main__':
                 tenant_id=tenant.id
             )
             spaces.append(space)
+
         db.session.add_all(spaces)
         db.session.commit()
         print(f"Space data seeded successfully. Total spaces: {len(spaces)}")
