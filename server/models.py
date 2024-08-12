@@ -242,6 +242,7 @@ class Event(db.Model, SerializerMixin):
     date = db.Column(db.Date, nullable=False)
     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    image_url = db.Column(db.String, nullable=False)
 
     serialize_rules = ['-space.events', '-user.events', '-user.spaces', '-space.user', '-space.reviews', '-space.bookings', '-space.space_images', '-space.events', '-user.bookings', '-user.reviews', '-user.payments']
 

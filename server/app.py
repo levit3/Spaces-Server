@@ -569,7 +569,6 @@ class Events(Resource):
         organizer_id = 92
         space_id = data.get('space_id')
 
-        # Check if organizer_id is present
         if not organizer_id:
             return make_response({"error": "User is not logged in or session has expired"}, 400)
 
