@@ -18,6 +18,7 @@ import requests
 from datetime import datetime
 import re
 import logging
+from werkzeug.exceptions import BadRequest
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -98,20 +99,10 @@ def token_required(func):
 
 class Bookings(Resource):
     def get(self):
-        bookings = Booking.query.all()
-        booking_data = [
-            {
-                'id': booking.id,
-                'user_id': booking.user_id,
-                'total_price': booking.total_price,
-                'status': booking.status,
-                'created_at': booking.created_at,
-                'updated_at': booking.updated_at,
-                'space_id': booking.space.id,
-                'space_title': booking.space.title
-            } for booking in bookings
-        ]
-        return make_response(jsonify(booking_data), 200)
+        booking_arr = Booking.query.all()
+        bookings = [booking.to_dict() for booking in booking_arr]
+        return make_response(bookings, 200)
+    
     def post(self):
         data = request.json
         booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
@@ -458,36 +449,50 @@ class MpesaCallback(Resource):
         return {"ResultCode": "0", "ResultDesc": "Success"}, 200
 
 class Spaces(Resource):
-    class Spaces(Resource):
-     def get(self):
-        spaces = Space.query.all()
-        space_data = [space.to_dict() for space in spaces]
-        return make_response(space_data), 200
-    
+    def get(self):
+      spaces = Space.query.all()
+      space_data = [space.to_dict() for space in spaces]
+      return make_response(jsonify(space_data), 200)
+  
     def post(self):
-        data = request.get_json()
-        title = data.get('title')
-        description = data.get('description')
-        location = data.get('location')
-        price_per_hour = data.get('price_per_hour')
-        status = data.get('status')
-        tenant_id = 7  # Assuming tenant_id is fixed; otherwise, adjust this logic
+        try:
+            data = request.json
+            print(data)
 
-        if not tenant_id:
-            return make_response(jsonify({"error": "Tenant not added"}), 400)
+            if not all(key in data for key in ('title', 'description', 'location', 'price_per_hour', 'status',' tenant_id')):
+                raise BadRequest("Missing required fields")
 
-        space = Space(
-            title=title,
-            description=description,
-            location=location,
-            price_per_hour=price_per_hour,
-            status=status,
-            tenant_id=tenant_id
-        )
-        db.session.add(space)
-        db.session.commit()
-        return make_response(jsonify(space.to_dict()), 201)
+            title = data.get('title')
+            description = data.get('description')
+            location = data.get('location')
+            price_per_hour = data.get('price_per_hour')
+            status = data.get('status')
+            tenant_id = data.get('tenant_id')
 
+            if not isinstance(price_per_hour, (int, float)) or price_per_hour <= 0:
+                raise BadRequest("Invalid price_per_hour")
+
+            space = Space(
+                title=title,
+                description=description,
+                location=location,
+                price_per_hour=price_per_hour,
+                status=status,
+                tenant_id=tenant_id
+            )
+            print('past creation')
+            db.session.add(space)
+            db.session.commit()
+            print('past commit')
+
+            return make_response(space.to_dict())
+
+        except BadRequest as e:
+            return jsonify({"error": str(e)}), 400
+
+        except Exception as e:
+            db.session.rollback() 
+            return jsonify({"error": "An unexpected error occurred. Please try again later."}), 500
 class SpaceByID(Resource):
     def get(self, space_id):
         space = Space.query.get(space_id)
