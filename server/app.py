@@ -244,157 +244,268 @@ class Payments(Resource):
         payment = [payment.to_dict() for payment in payments]
         return payment
 
-    def post(self):
-        data = request.get_json()
-        payment = Payment(**data)
-        db.session.add(payment)
-        db.session.commit()
-        return payment.to_dict()
+def post(self):
+    data = request.get_json()
+    if not data:
+        return {"error": "No JSON data provided"}, 400
 
-class PaymentByID(Resource):
-    # @token_required  
-    def get(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        return payment.to_dict()
+    # Extract and validate required fields for payment creation
+    amount = data.get('amount')
+    if not amount:
+        return {"error": "Payment amount is required"}, 400
 
-    # @token_required  
-    def put(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(payment, key, value)
-        db.session.commit()
-        return payment.to_dict()
+    payment_method = data.get('payment_method')
+    if not payment_method:
+        return {"error": "Payment method is required"}, 400
 
-    # @token_required
-    def delete(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        db.session.delete(payment)
-        db.session.commit()
-        return payment.to_dict()
-    
-    # @token_required  
-    def patch(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(payment, key, value)
-        db.session.commit()
-        return payment.to_dict()
+    # Create the payment object
+    payment = Payment(amount=amount, status='initiated')
+    db.session.add(payment)
+    db.session.commit()
 
-    # @token_required  
-    def post(self, payment_id):
-        payment = db.session.get(Payment, payment_id)
-        if not payment:
-            return {"error": "Payment not found"}, 404
-
-        data = request.get_json()
-        if not data:
-            return {"error": "No JSON data provided"}, 400
-
-        payment_method = data.get('payment_method')
-        if not payment_method:
-            return {"error": "Payment method is required"}, 400
-
-        try:
-            if payment_method == 'mpesa':
-                return self.initiate_mpesa_payment(payment, data)
-            elif payment_method == 'paypal':
-                return self.initiate_paypal_payment(payment)
-            else:
-                return {"error": "Invalid payment method"}, 400
-        except Exception as e:
-            logging.error(f"Error processing payment: {str(e)}")
-            return {"error": "An error occurred while processing the payment", "details": str(e)}, 500
-
-    # @token_required  
-    def initiate_mpesa_payment(self, payment, data):
-        phone_number = data.get('phone_number')
-        if not phone_number:
-            return {"error": "Phone number is required"}, 400
-
-        phone_number = validate_and_format_phone_number(phone_number)
-
-        access_token = get_oauth_token()
-
-        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-        password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
-
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {access_token}'
-        }
-
-        payload = {
-            "BusinessShortCode": int(shortcode),
-            "Password": password,
-            "Timestamp": timestamp,
-            "TransactionType": "CustomerPayBillOnline",
-            # "Amount": int(payment.amount),
-            "Amount": int(1),
-            "PartyA": int(phone_number),
-            "PartyB": int(shortcode),
-            "PhoneNumber": int(phone_number),
-            "CallBackURL": callback_url,
-            "AccountReference": f"Payment{payment.id}",
-            "TransactionDesc": f"Payment for order {payment.id}"
-        }
-
-        logging.debug(f"Payload: {payload}")
-
-        try:
-            response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
-                                     headers=headers,
-                                     json=payload)
-            response.raise_for_status()
-
-            logging.debug(f"M-Pesa API Response: {response.text}")
-
-            if response.status_code == 200:
-                payment.status = 'pending'
-                payment.payment_method = 'mpesa'
-                db.session.commit()
-                return response.json(), 200
-            else:
-                return {"error": "M-Pesa request failed", "details": response.text}, response.status_code
-        except requests.exceptions.RequestException as e:
-            logging.error(f"Error making request to M-Pesa API: {str(e)}")
-            return {"error": "Failed to communicate with M-Pesa API", "details": str(e)}, 500
-        
-    # @token_required
-    def initiate_paypal_payment(self, payment):
-        paypal_payment = paypalrestsdk.Payment({
-            "intent": "sale",
-            "payer": {
-                "payment_method": "paypal"},
-            "redirect_urls": {
-                "return_url": f"http://127.0.0.1:5555/api/payment_success/{payment.id}",
-                "cancel_url": f"http://127.0.0.1:5555/api/payment_cancel/{payment.id}"},
-            "transactions": [{
-                "item_list": {
-                    "items": [{
-                        "name": f"Payment {payment.id}",
-                        "sku": f"PAYMENT-{payment.id}",
-                        "price": str(payment.amount),
-                        "currency": "USD",
-                        "quantity": 1}]},
-                "amount": {
-                    "total": str(payment.amount),
-                    "currency": "USD"},
-                "description": f"Payment for order {payment.id}"}]})
-
-        if paypal_payment.create():
-            payment.status = 'pending'
-            payment.payment_method = 'paypal'
-            payment.paypal_payment_id = paypal_payment.id
-            db.session.commit()
-
-            for link in paypal_payment.links:
-                if link.rel == "approval_url":
-                    approval_url = str(link.href)
-                    return {"approval_url": approval_url}, 200
+    try:
+        if payment_method == 'mpesa':
+            return self.initiate_mpesa_payment(payment, data)
+        elif payment_method == 'paypal':
+            return self.initiate_paypal_payment(payment)
         else:
-            return {"error": paypal_payment.error}, 400
+            return {"error": "Invalid payment method"}, 400
+    except Exception as e:
+        logging.error(f"Error processing payment: {str(e)}")
+        return {"error": "An error occurred while processing the payment", "details": str(e)}, 500
+
+# @token_required  
+def initiate_mpesa_payment(self, payment, data):
+    phone_number = data.get('phone_number')
+    if not phone_number:
+        return {"error": "Phone number is required"}, 400
+
+    phone_number = validate_and_format_phone_number(phone_number)
+
+    access_token = get_oauth_token()
+
+    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': f'Bearer {access_token}'
+    }
+
+    payload = {
+        "BusinessShortCode": int(shortcode),
+        "Password": password,
+        "Timestamp": timestamp,
+        "TransactionType": "CustomerPayBillOnline",
+        "Amount": int(payment.amount),
+        "PartyA": int(phone_number),
+        "PartyB": int(shortcode),
+        "PhoneNumber": int(phone_number),
+        "CallBackURL": callback_url,
+        "AccountReference": f"Payment{payment.id}",
+        "TransactionDesc": f"Payment for order {payment.id}"
+    }
+
+    logging.debug(f"Payload: {payload}")
+
+    try:
+        response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+                                 headers=headers,
+                                 json=payload)
+        response.raise_for_status()
+
+        logging.debug(f"M-Pesa API Response: {response.text}")
+
+        if response.status_code == 200:
+            payment.status = 'pending'
+            payment.payment_method = 'mpesa'
+            db.session.commit()
+            return response.json(), 200
+        else:
+            return {"error": "M-Pesa request failed", "details": response.text}, response.status_code
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error making request to M-Pesa API: {str(e)}")
+        return {"error": "Failed to communicate with M-Pesa API", "details": str(e)}, 500
+
+# @token_required
+def initiate_paypal_payment(self, payment):
+    paypal_payment = paypalrestsdk.Payment({
+        "intent": "sale",
+        "payer": {
+            "payment_method": "paypal"},
+        "redirect_urls": {
+            "return_url": f"http://127.0.0.1:5555/api/payment_success/{payment.id}",
+            "cancel_url": f"http://127.0.0.1:5555/api/payment_cancel/{payment.id}"},
+        "transactions": [{
+            "item_list": {
+                "items": [{
+                    "name": f"Payment {payment.id}",
+                    "sku": f"PAYMENT-{payment.id}",
+                    "price": str(payment.amount),
+                    "currency": "USD",
+                    "quantity": 1}]},
+            "amount": {
+                "total": str(payment.amount),
+                "currency": "USD"},
+            "description": f"Payment for order {payment.id}"}]})
+
+    if paypal_payment.create():
+        payment.status = 'pending'
+        payment.payment_method = 'paypal'
+        payment.paypal_payment_id = paypal_payment.id
+        db.session.commit()
+
+        for link in paypal_payment.links:
+            if link.rel == "approval_url":
+                approval_url = str(link.href)
+                return {"approval_url": approval_url}, 200
+    else:
+        return {"error": paypal_payment.error}, 400
+
+# class PaymentByID(Resource):
+#     # @token_required  
+#     def get(self, payment_id):
+#         payment = Payment.query.get(payment_id)
+#         return payment.to_dict()
+
+#     # @token_required  
+#     def put(self, payment_id):
+#         payment = Payment.query.get(payment_id)
+#         data = request.get_json()
+#         for key, value in data.items():
+#             setattr(payment, key, value)
+#         db.session.commit()
+#         return payment.to_dict()
+
+#     # @token_required
+#     def delete(self, payment_id):
+#         payment = Payment.query.get(payment_id)
+#         db.session.delete(payment)
+#         db.session.commit()
+#         return payment.to_dict()
+    
+#     # @token_required  
+#     def patch(self, payment_id):
+#         payment = Payment.query.get(payment_id)
+#         data = request.get_json()
+#         for key, value in data.items():
+#             setattr(payment, key, value)
+#         db.session.commit()
+#         return payment.to_dict()
+
+#     # @token_required  
+#     def post(self, payment_id):
+#         payment = db.session.get(Payment, payment_id)
+#         if not payment:
+#             return {"error": "Payment not found"}, 404
+
+#         data = request.get_json()
+#         if not data:
+#             return {"error": "No JSON data provided"}, 400
+
+#         payment_method = data.get('payment_method')
+#         if not payment_method:
+#             return {"error": "Payment method is required"}, 400
+
+#         try:
+#             if payment_method == 'mpesa':
+#                 return self.initiate_mpesa_payment(payment, data)
+#             elif payment_method == 'paypal':
+#                 return self.initiate_paypal_payment(payment)
+#             else:
+#                 return {"error": "Invalid payment method"}, 400
+#         except Exception as e:
+#             logging.error(f"Error processing payment: {str(e)}")
+#             return {"error": "An error occurred while processing the payment", "details": str(e)}, 500
+
+#     # @token_required  
+#     def initiate_mpesa_payment(self, payment, data):
+#         phone_number = data.get('phone_number')
+#         if not phone_number:
+#             return {"error": "Phone number is required"}, 400
+
+#         phone_number = validate_and_format_phone_number(phone_number)
+
+#         access_token = get_oauth_token()
+
+#         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+#         password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
+
+#         headers = {
+#             'Content-Type': 'application/json',
+#             'Authorization': f'Bearer {access_token}'
+#         }
+
+#         payload = {
+#             "BusinessShortCode": int(shortcode),
+#             "Password": password,
+#             "Timestamp": timestamp,
+#             "TransactionType": "CustomerPayBillOnline",
+#             # "Amount": int(payment.amount),
+#             "Amount": int(1),
+#             "PartyA": int(phone_number),
+#             "PartyB": int(shortcode),
+#             "PhoneNumber": int(phone_number),
+#             "CallBackURL": callback_url,
+#             "AccountReference": f"Payment{payment.id}",
+#             "TransactionDesc": f"Payment for order {payment.id}"
+#         }
+
+#         logging.debug(f"Payload: {payload}")
+
+#         try:
+#             response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+#                                      headers=headers,
+#                                      json=payload)
+#             response.raise_for_status()
+
+#             logging.debug(f"M-Pesa API Response: {response.text}")
+
+#             if response.status_code == 200:
+#                 payment.status = 'pending'
+#                 payment.payment_method = 'mpesa'
+#                 db.session.commit()
+#                 return response.json(), 200
+#             else:
+#                 return {"error": "M-Pesa request failed", "details": response.text}, response.status_code
+#         except requests.exceptions.RequestException as e:
+#             logging.error(f"Error making request to M-Pesa API: {str(e)}")
+#             return {"error": "Failed to communicate with M-Pesa API", "details": str(e)}, 500
+        
+#     # @token_required
+#     def initiate_paypal_payment(self, payment):
+#         paypal_payment = paypalrestsdk.Payment({
+#             "intent": "sale",
+#             "payer": {
+#                 "payment_method": "paypal"},
+#             "redirect_urls": {
+#                 "return_url": f"http://127.0.0.1:5555/api/payment_success/{payment.id}",
+#                 "cancel_url": f"http://127.0.0.1:5555/api/payment_cancel/{payment.id}"},
+#             "transactions": [{
+#                 "item_list": {
+#                     "items": [{
+#                         "name": f"Payment {payment.id}",
+#                         "sku": f"PAYMENT-{payment.id}",
+#                         "price": str(payment.amount),
+#                         "currency": "USD",
+#                         "quantity": 1}]},
+#                 "amount": {
+#                     "total": str(payment.amount),
+#                     "currency": "USD"},
+#                 "description": f"Payment for order {payment.id}"}]})
+
+#         if paypal_payment.create():
+#             payment.status = 'pending'
+#             payment.payment_method = 'paypal'
+#             payment.paypal_payment_id = paypal_payment.id
+#             db.session.commit()
+
+#             for link in paypal_payment.links:
+#                 if link.rel == "approval_url":
+#                     approval_url = str(link.href)
+#                     return {"approval_url": approval_url}, 200
+#         else:
+#             return {"error": paypal_payment.error}, 400
         
 class PaymentSuccess(Resource):
     def get(self, payment_id):
@@ -738,7 +849,7 @@ api.add_resource(Users, '/api/users')
 api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')
 api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
-api.add_resource(Spaces, '/api/spaces>')
+api.add_resource(Spaces, '/api/spaces')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
 api.add_resource(Signup, '/api/signup')
 api.add_resource(Login, '/api/login')
