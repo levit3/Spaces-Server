@@ -458,10 +458,11 @@ class MpesaCallback(Resource):
         return {"ResultCode": "0", "ResultDesc": "Success"}, 200
 
 class Spaces(Resource):
-    def get(self):
-      spaces = Space.query.all()
-      space_data = [space.to_dict() for space in spaces]
-      return make_response(jsonify(space_data), 200)
+    class Spaces(Resource):
+     def get(self):
+        spaces = Space.query.all()
+        space_data = [space.to_dict() for space in spaces]
+        return make_response(space_data), 200
     
     def post(self):
         data = request.get_json()
@@ -470,8 +471,10 @@ class Spaces(Resource):
         location = data.get('location')
         price_per_hour = data.get('price_per_hour')
         status = data.get('status')
-        UserByID
-        
+        tenant_id = 7  # Assuming tenant_id is fixed; otherwise, adjust this logic
+
+        if not tenant_id:
+            return make_response(jsonify({"error": "Tenant not added"}), 400)
 
         space = Space(
             title=title,
@@ -479,41 +482,49 @@ class Spaces(Resource):
             location=location,
             price_per_hour=price_per_hour,
             status=status,
+            tenant_id=tenant_id
         )
         db.session.add(space)
         db.session.commit()
-        return space.to_dict()
+        return make_response(jsonify(space.to_dict()), 201)
 
 class SpaceByID(Resource):
-    # @token_required
     def get(self, space_id):
         space = Space.query.get(space_id)
-        return [space.to_dict()]
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        return make_response(jsonify(space.to_dict()), 200)
 
-    # @token_required   
     def put(self, space_id):
         space = Space.query.get(space_id)
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        
         data = request.get_json()
         for key, value in data.items():
             setattr(space, key, value)
         db.session.commit()
-        return space.to_dict()
+        return make_response(jsonify(space.to_dict()), 200)
 
-    # @token_required   
     def delete(self, space_id):
-       space = Space.query.get(space_id)
-       db.session.delete(space)
-       db.session.commit()
-       return space.to_dict()
+        space = Space.query.get(space_id)
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        
+        db.session.delete(space)
+        db.session.commit()
+        return make_response(jsonify(space.to_dict()), 200)
 
-    # @token_required   
     def patch(self, space_id):
-     space = Space.query.get(space_id)
-     data = request.get_json()
-     for key, value in data.items():
-        setattr(space, key, value)
-     db.session.commit()
-     return space.to_dict()
+        space = Space.query.get(space_id)
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(space, key, value)
+        db.session.commit()
+        return make_response(jsonify(space.to_dict()), 200)
     
 class Login(Resource):
     
@@ -670,7 +681,7 @@ api.add_resource(Users, '/api/users')
 api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')
 api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
-api.add_resource(Spaces, '/api/spaces>')
+api.add_resource(Spaces, '/api/spaces')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
