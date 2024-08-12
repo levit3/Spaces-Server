@@ -138,6 +138,7 @@ class BookingByID(Resource):
             setattr(booking, key, value)
         db.session.commit()
         return make_response(booking.to_dict(),200)
+    
 
 
 class Users(Resource):
@@ -145,6 +146,13 @@ class Users(Resource):
         users = User.query.all()
         user = [user.to_dict() for user in users]
         return make_response(user)
+    
+    def post(self):
+        data = request.get_json()
+        user = User(name = data['name'], email = data['email'], password = data['password'])
+        db.session.add(user)
+        db.session.commit()
+        return make_response(user.to_dict(),200)
     
 
 class UserByID(Resource):
@@ -242,58 +250,25 @@ class Payments(Resource):
         payments = Payment.query.all()
         payment = [payment.to_dict() for payment in payments]
         return payment
-
-    def post(self):
-        data = request.get_json()
-        payment = Payment(**data)
-        db.session.add(payment)
-        db.session.commit()
-        return payment.to_dict()
-
-class PaymentByID(Resource):
-    # @token_required  
-    def get(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        return payment.to_dict()
-
-    # @token_required  
-    def put(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(payment, key, value)
-        db.session.commit()
-        return payment.to_dict()
-
-    # @token_required
-    def delete(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        db.session.delete(payment)
-        db.session.commit()
-        return payment.to_dict()
     
-    # @token_required  
-    def patch(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(payment, key, value)
-        db.session.commit()
-        return payment.to_dict()
-
-    # @token_required  
-    def post(self, payment_id):
-        payment = db.session.get(Payment, payment_id)
-        if not payment:
-            return {"error": "Payment not found"}, 404
-
+    def post(self):
         data = request.get_json()
         if not data:
             return {"error": "No JSON data provided"}, 400
 
+        # Extract and validate required fields for payment creation
+        amount = data.get('amount')
+        if not amount:
+            return {"error": "Payment amount is required"}, 400
+
         payment_method = data.get('payment_method')
         if not payment_method:
             return {"error": "Payment method is required"}, 400
+
+        # Create the payment object
+        payment = Payment(amount=amount, status='initiated')
+        db.session.add(payment)
+        db.session.commit()
 
         try:
             if payment_method == 'mpesa':
@@ -329,8 +304,7 @@ class PaymentByID(Resource):
             "Password": password,
             "Timestamp": timestamp,
             "TransactionType": "CustomerPayBillOnline",
-            # "Amount": int(payment.amount),
-            "Amount": int(1),
+            "Amount": int(payment.amount),
             "PartyA": int(phone_number),
             "PartyB": int(shortcode),
             "PhoneNumber": int(phone_number),
@@ -343,8 +317,8 @@ class PaymentByID(Resource):
 
         try:
             response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
-                                     headers=headers,
-                                     json=payload)
+                                    headers=headers,
+                                    json=payload)
             response.raise_for_status()
 
             logging.debug(f"M-Pesa API Response: {response.text}")
@@ -359,7 +333,7 @@ class PaymentByID(Resource):
         except requests.exceptions.RequestException as e:
             logging.error(f"Error making request to M-Pesa API: {str(e)}")
             return {"error": "Failed to communicate with M-Pesa API", "details": str(e)}, 500
-        
+
     # @token_required
     def initiate_paypal_payment(self, payment):
         paypal_payment = paypalrestsdk.Payment({
@@ -394,6 +368,39 @@ class PaymentByID(Resource):
                     return {"approval_url": approval_url}, 200
         else:
             return {"error": paypal_payment.error}, 400
+
+
+        
+class PaymentByID(Resource):
+    # @token_required  
+    def get(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        return payment.to_dict()
+
+    # @token_required  
+    def put(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(payment, key, value)
+        db.session.commit()
+        return payment.to_dict()
+
+    # @token_required
+    def delete(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        db.session.delete(payment)
+        db.session.commit()
+        return payment.to_dict()
+    
+    # @token_required  
+    def patch(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(payment, key, value)
+        db.session.commit()
+        return payment.to_dict()
         
 class PaymentSuccess(Resource):
     def get(self, payment_id):
