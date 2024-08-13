@@ -67,7 +67,7 @@ if __name__ == '__main__':
         # Create space data
         spaces = []
         tenants = User.query.filter_by(role=UserRole.TENANT).all()
-        for _ in range(50):
+        for _ in range(10):
             tenant = choice(tenants)
             space = Space(
                 title=fake.company(),
@@ -126,30 +126,32 @@ if __name__ == '__main__':
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRinBt-dGanCh9cy2c5gMHIMZpjNkrguT7M4w&s",
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8RS4N3GTTNu_hE_O0czavuCseylFU9IQoQg&s",
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjD6Zjx06b5OIfGrj1XQ7hRqg4UKq3Rc2QqQ&s",
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGeI6be1l5nFx752kcU8y6jxtmsGugYvC7Cw&s",
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqxrzw3sRFwoMy2teoaO_oedw6-EbasiLEbQ&s",
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsv5BghQypAA9vL-F_dueyDaJmYiYCsfyZUA&s",
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0q1-ZXX1ueiy5mmfD8HkhEt6Sc_jNf4xeNg&s",
-                    "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT27H5Kc3MuLwzQMvZdT76_yeiEgabghpwpSw&s",
+                    # "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGeI6be1l5nFx752kcU8y6jxtmsGugYvC7Cw&s",
+                    # "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQqxrzw3sRFwoMy2teoaO_oedw6-EbasiLEbQ&s",
+                    # "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRsv5BghQypAA9vL-F_dueyDaJmYiYCsfyZUA&s",
+                    # "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR0q1-ZXX1ueiy5mmfD8HkhEt6Sc_jNf4xeNg&s",
+                    # "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT27H5Kc3MuLwzQMvZdT76_yeiEgabghpwpSw&s",
                     
                      ]
         for space in spaces:
-          for _ in range(4):  # Each space gets 4 images
-                img_url = choice(space_images)
+            assigned_images = rc(space_images, 4)  
+            for img_url in assigned_images:
                 space_image = SpaceImages(
                     space_id=space.id,
                     image_url=img_url
                 )
                 db.session.add(space_image)
+                space_images.remove(img_url)  
+
         db.session.commit()
-        print(f"Space image data seeded successfully. Total space images: {len(space_images)}")
+        print(f"Space image data seeded successfully.")
 
         # Create booking data
         bookings = []
         users = User.query.filter_by(role=UserRole.USER).all()
         for _ in range(200):
             user_id = choice(users).id
-            space_id = choice(range(1, 51))
+            space_id = choice(range(1, 10))
             start_date = fake.date_this_year()
             end_date = fake.date_between(start_date=start_date, end_date="+1y")
 
