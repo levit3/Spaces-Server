@@ -144,13 +144,14 @@ class Users(Resource):
         user = [user.to_dict() for user in users]
         return make_response(user)
     
+    
+    
 
 class UserByID(Resource):
-    @token_required
-    # def get(self, user_id):
-    def get(self, user_id, current_user):
-        if current_user.id != user_id:
-            return jsonify({'message': 'Unauthorized'}), 403
+    # @token_required
+    def get(self, user_id):
+        # if current_user.id != user_id:
+        #     return jsonify({'message': 'Unauthorized'}), 403
         user = User.query.filter_by(id = user_id).first()
         return make_response(user.to_dict(), 200)
     
