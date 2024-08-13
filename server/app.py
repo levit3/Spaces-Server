@@ -157,11 +157,11 @@ class Users(Resource):
     
 
 class UserByID(Resource):
-    @token_required
-    # def get(self, user_id):
-    def get(self, user_id, current_user):
-        if current_user.id != user_id:
-            return jsonify({'message': 'Unauthorized'}), 403
+    #@token_required
+    def get(self, user_id):
+        # if current_user.id != user_id:
+        #     return jsonify({'message': 'Unauthorized'}), 403
+
         user = User.query.filter_by(id = user_id).first()
         return make_response(user.to_dict(), 200)
     
@@ -488,14 +488,16 @@ class Spaces(Resource):
 class SpaceByID(Resource):
     def get(self, space_id):
         space = Space.query.get(space_id)
-        if space is None:
-            return {"message": "Space not found"}, 404
-        return space.to_dict(), 200
+
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+        return make_response(jsonify(space.to_dict()), 200)
 
     def put(self, space_id):
         space = Space.query.get(space_id)
-        if space is None:
-            return {"message": "Space not found"}, 404
+        if not space:
+            return make_response(jsonify({"error": "Space not found"}), 404)
+
         data = request.get_json()
         for key, value in data.items():
             setattr(space, key, value)
@@ -518,7 +520,9 @@ class SpaceByID(Resource):
         for key, value in data.items():
             setattr(space, key, value)
         db.session.commit()
-        return space.to_dict(), 200   
+
+        return make_response(jsonify(space.to_dict()), 200)
+
     
 class Signup(Resource):
     def post(self):
