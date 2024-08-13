@@ -511,7 +511,6 @@ if __name__ == '__main__':
 
             space = db.session.get(Space, space_id)
             total_price = hours * space.price_per_hour
-            status = choice(["pending", "approved", "rejected"])
             created_at = fake.date_this_year()
 
             booking = Booking(
@@ -520,7 +519,6 @@ if __name__ == '__main__':
                 start_date=start_date,
                 end_date=end_date,
                 total_price=total_price,
-                status=status,
                 created_at=created_at
             )
             bookings.append(booking)
@@ -610,13 +608,13 @@ if __name__ == '__main__':
             {
                 "title": "Music Festival Extravaganza",
                 "description": "Experience live music from top artists at our annual festival.",
-                "date": date(2024, 7, 12),
+                "date": date(2024, 10, 12),
                 "image_url": "https://example.com/images/music_festival.jpg"
             },
             {
                 "title": "Culinary Arts Showcase",
                 "description": "Taste and learn from the best chefs in the culinary world.",
-                "date": date(2024, 8, 5),
+                "date": date(2024, 8, 15),
                 "image_url": "https://example.com/images/culinary_arts.jpg"
             },
             {
@@ -640,7 +638,7 @@ if __name__ == '__main__':
             {
                 "title": "Film Screening and Discussion",
                 "description": "Join us for a film screening followed by a panel discussion.",
-                "date": date(2024, 7, 22),
+                "date": date(2024, 11, 22),
                 "image_url": "https://example.com/images/film_screening.jpg"
             },
             {
@@ -694,7 +692,7 @@ if __name__ == '__main__':
             {
                 "title": "Meditation and Mindfulness Retreat",
                 "description": "Find peace and relaxation at our meditation retreat.",
-                "date": date(2024, 7, 30),
+                "date": date(2024, 10, 30),
                 "image_url": "https://example.com/images/meditation_retreat.jpg"
             },
             {
@@ -724,7 +722,7 @@ if __name__ == '__main__':
             {
                 "title": "Dance Workshop",
                 "description": "Learn new dance moves from professional instructors.",
-                "date": date(2024, 7, 14),
+                "date": date(2024, 9, 14),
                 "image_url": "https://example.com/images/dance_workshop.jpg"
             },
             {
@@ -754,7 +752,7 @@ if __name__ == '__main__':
             {
                 "title": "Digital Marketing Conference",
                 "description": "Stay ahead of the trends in digital marketing.",
-                "date": date(2024, 7, 26),
+                "date": date(2024, 11, 26),
                 "image_url": "https://example.com/images/marketing_conference.jpg"
             },
             {
@@ -784,13 +782,13 @@ if __name__ == '__main__':
             {
                 "title": "Wine and Cheese Evening",
                 "description": "Enjoy an evening of wine and cheese pairing.",
-                "date": date(2024, 7, 18),
+                "date": date(2024, 9, 18),
                 "image_url": "https://example.com/images/wine_cheese.jpg"
             },
             {
                 "title": "Baking Workshop",
                 "description": "Learn how to bake delicious treats from professional bakers.",
-                "date": date(2024, 8, 12),
+                "date": date(2024, 8, 22),
                 "image_url": "https://example.com/images/baking_workshop.jpg"
             },
             {
@@ -814,7 +812,7 @@ if __name__ == '__main__':
             {
                 "title": "Craft Beer Tasting",
                 "description": "Sample a variety of craft beers from local breweries.",
-                "date": date(2024, 7, 20),
+                "date": date(2024, 8, 20),
                 "image_url": "https://example.com/images/beer_tasting.jpg"
             },
             {
@@ -850,7 +848,7 @@ if __name__ == '__main__':
             {
                 "title": "Cider Tasting Event",
                 "description": "Taste a variety of ciders at our tasting event.",
-                "date": date(2024, 7, 27),
+                "date": date(2024, 8, 27),
                 "image_url": "https://example.com/images/cider_tasting.jpg"
             },
             {

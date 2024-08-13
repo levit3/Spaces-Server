@@ -104,10 +104,15 @@ class Bookings(Resource):
     
     def post(self):
         data = request.json
-        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
+        datetime_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+        start_date = datetime.strptime(data['start_date'], datetime_format).date()
+        end_date = datetime.strptime(data['end_date'], datetime_format).date()
+        
+        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = start_date, end_date = end_date, total_price = data['total_price'])
         db.session.add(booking)
         db.session.commit()
-        return booking.to_dict()
+        return make_response(booking.to_dict())
         
     
 class BookingByID(Resource):
@@ -760,7 +765,6 @@ class Events(Resource):
         event = Event(
             title=title,
             description=description,
-            location=location,
             date=date,
             organizer_id=organizer_id,
             space_id=space_id)
@@ -770,7 +774,7 @@ class Events(Resource):
 class EventByID(Resource):
     def get(self, event_id):
         event = Event.query.get(event_id)
-        return [event.to_dict()]
+        return make_response(event.to_dict())
 
     def patch(self, id):
         event = Event.query.get(id)
