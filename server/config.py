@@ -11,6 +11,8 @@ import secrets
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["SESSION_COOKIE_SAMESITE"] = "None"
+app.config["SESSION_COOKIE_SECURE"] = True
 def generate_secret_key():
     return secrets.token_hex(32)
 app.config['SECRET_KEY'] = generate_secret_key()
@@ -32,5 +34,5 @@ api = Api(app)
 bcrypt = Bcrypt(app)
 
 # CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}},)
-CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "http://localhost:3000"}})
+CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:3000"}})
 
