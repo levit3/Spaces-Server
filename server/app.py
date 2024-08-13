@@ -749,10 +749,12 @@ class Events(Resource):
         data = request.get_json()
         title = data.get('title')
         description = data.get('description')
-        location = data.get('location')
         date = data.get('date')
-        organizer_id = data.get('user_id')
-        space_id = data.get('space_id')   
+        organizer_id = 92
+        space_id = data.get('space_id')
+
+        if not organizer_id:
+            return make_response({"error": "User is not logged in or session has expired"}, 400)
 
         event = Event(
             title=title,
