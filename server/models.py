@@ -28,7 +28,7 @@ class User(SerializerMixin, db.Model):
     _password = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
     profile_picture = db.Column(db.String)
-    role = db.Column(db.Enum(UserRole), nullable=False)
+    role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
 
     spaces = db.relationship('Space', back_populates='user')
     reviews = db.relationship("Review", back_populates='user')
@@ -64,16 +64,14 @@ class User(SerializerMixin, db.Model):
 
     @validates('email')
     def validate_email(self, key, email):
-        if not re.match(r"[^@]+@[^@]+.[^@]+", email):
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             raise ValueError('Invalid email address')
         existing_email = User.query.filter_by(email=email).first()
         if existing_email:
             raise ValueError('Email already exists')
         return email
 
-
 ## Spaces
-
 class Space(db.Model, SerializerMixin):
     __tablename__ = 'spaces'
 
@@ -85,6 +83,7 @@ class Space(db.Model, SerializerMixin):
     location = db.Column(db.String, nullable=False)
     price_per_hour = db.Column(db.Float, nullable=False)
     status = db.Column(db.String, nullable=False)
+    # category = db.Column(db.String, nullable=False)  
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     capacity = db.Column(db.Integer)
 
