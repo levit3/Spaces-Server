@@ -75,6 +75,7 @@ if __name__ == '__main__':
                 location=fake.city(),
                 price_per_hour=randint(10, 300),
                 status=rc(["available", "unavailable"], k=1)[0],
+                capacity=randint(50, 1000),
                 tenant_id=tenant.id
             )
             spaces.append(space)
@@ -83,7 +84,7 @@ if __name__ == '__main__':
         print(f"Space data seeded successfully. Total spaces: {len(spaces)}")
 
         #Create space_images data
-  
+        spaces = Space.query.all()       
         space_images = [
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDukxrvEf8vKC_0xErzjglzDy_AgasRMRxUw&s",
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRh_FpfaZod6mxUYoIs0Sxkk6oEAgSRk0om6g&s",
@@ -132,10 +133,16 @@ if __name__ == '__main__':
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT27H5Kc3MuLwzQMvZdT76_yeiEgabghpwpSw&s",
                     
                      ]
-
+        for space in spaces:
+          for _ in range(4):  # Each space gets 4 images
+                img_url = choice(space_images)
+                space_image = SpaceImages(
+                    space_id=space.id,
+                    image_url=img_url
+                )
+                db.session.add(space_image)
+        db.session.commit()
         print(f"Space image data seeded successfully. Total space images: {len(space_images)}")
-
- 
 
         # Create booking data
         bookings = []
@@ -189,7 +196,7 @@ if __name__ == '__main__':
         users = User.query.filter_by(role='USER').all()
         for _ in range(200):
             user_id = choice(users).id
-            user = User.query.get(user_id)
+            user = User.query.filter_by(id=user_id).first()
             bookings = user.bookings
             if bookings:
                 booking = choice(bookings)
@@ -219,25 +226,25 @@ if __name__ == '__main__':
             {
                 "title": "Summer Networking Event",
                 "description": "Join us for a fun networking event with industry professionals.",
-                "date": date(2024, 8, 20),
+                "date": date(2024, 8, 19),  # Adjusted to 19/08/2024
                 "image_url": "https://example.com/images/networking.jpg"
             },
             {
                 "title": "Tech Innovation Conference",
                 "description": "A conference discussing the latest trends in technology and innovation.",
-                "date": date(2024, 9, 10),
+                "date": date(2024, 8, 25),  # Adjusted to 25/08/2024
                 "image_url": "https://example.com/images/tech_conference.jpg"
             },
             {
                 "title": "Art and Design Expo",
                 "description": "Explore the world of art and design at our annual expo.",
-                "date": date(2024, 10, 5),
+                "date": date(2024, 9, 5),  # Adjusted to 05/09/2024
                 "image_url": "https://example.com/images/art_expo.jpg"
             },
             {
                 "title": "Business Growth Summit",
                 "description": "Learn strategies for growing your business at our annual summit.",
-                "date": date(2024, 9, 25),
+                "date": date(2024, 9, 12),  # Adjusted to 12/09/2024
                 "image_url": "https://example.com/images/business_summit.jpg"
             },
             {
@@ -249,13 +256,13 @@ if __name__ == '__main__':
             {
                 "title": "Music Festival Extravaganza",
                 "description": "Experience live music from top artists at our annual festival.",
-                "date": date(2024, 7, 12),
+                "date": date(2024, 10, 12),
                 "image_url": "https://example.com/images/music_festival.jpg"
             },
             {
                 "title": "Culinary Arts Showcase",
                 "description": "Taste and learn from the best chefs in the culinary world.",
-                "date": date(2024, 8, 5),
+                "date": date(2024, 9, 5),
                 "image_url": "https://example.com/images/culinary_arts.jpg"
             },
             {
@@ -279,13 +286,13 @@ if __name__ == '__main__':
             {
                 "title": "Film Screening and Discussion",
                 "description": "Join us for a film screening followed by a panel discussion.",
-                "date": date(2024, 7, 22),
+                "date": date(2024, 12, 22),
                 "image_url": "https://example.com/images/film_screening.jpg"
             },
             {
                 "title": "Charity Fundraising Gala",
                 "description": "Support a great cause by attending our charity fundraising gala.",
-                "date": date(2024, 8, 25),
+                "date": date(2024, 9, 25),
                 "image_url": "https://example.com/images/charity_gala.jpg"
             },
             {
@@ -309,7 +316,7 @@ if __name__ == '__main__':
             {
                 "title": "Startup Expo",
                 "description": "Showcase your startup and connect with investors and customers.",
-                "date": date(2024, 8, 18),
+                "date": date(2024, 9, 18),
                 "image_url": "https://example.com/images/startup_expo.jpg"
             },
             {
@@ -333,13 +340,13 @@ if __name__ == '__main__':
             {
                 "title": "Meditation and Mindfulness Retreat",
                 "description": "Find peace and relaxation at our meditation retreat.",
-                "date": date(2024, 7, 30),
+                "date": date(2024, 9, 30),
                 "image_url": "https://example.com/images/meditation_retreat.jpg"
             },
             {
                 "title": "Fitness Challenge Event",
                 "description": "Participate in our fitness challenge and push your limits.",
-                "date": date(2024, 8, 15),
+                "date": date(2024, 9, 15),
                 "image_url": "https://example.com/images/fitness_challenge.jpg"
             },
             {
@@ -363,7 +370,7 @@ if __name__ == '__main__':
             {
                 "title": "Dance Workshop",
                 "description": "Learn new dance moves from professional instructors.",
-                "date": date(2024, 7, 14),
+                "date": date(2024, 9, 14),
                 "image_url": "https://example.com/images/dance_workshop.jpg"
             },
             {
@@ -393,7 +400,7 @@ if __name__ == '__main__':
             {
                 "title": "Digital Marketing Conference",
                 "description": "Stay ahead of the trends in digital marketing.",
-                "date": date(2024, 7, 26),
+                "date": date(2024, 10, 26),
                 "image_url": "https://example.com/images/marketing_conference.jpg"
             },
             {
@@ -423,13 +430,13 @@ if __name__ == '__main__':
             {
                 "title": "Wine and Cheese Evening",
                 "description": "Enjoy an evening of wine and cheese pairing.",
-                "date": date(2024, 7, 18),
+                "date": date(2024, 9, 18),
                 "image_url": "https://example.com/images/wine_cheese.jpg"
             },
             {
                 "title": "Baking Workshop",
                 "description": "Learn how to bake delicious treats from professional bakers.",
-                "date": date(2024, 8, 12),
+                "date": date(2024, 9, 12),
                 "image_url": "https://example.com/images/baking_workshop.jpg"
             },
             {
@@ -453,7 +460,7 @@ if __name__ == '__main__':
             {
                 "title": "Craft Beer Tasting",
                 "description": "Sample a variety of craft beers from local breweries.",
-                "date": date(2024, 7, 20),
+                "date": date(2024, 10, 20),
                 "image_url": "https://example.com/images/beer_tasting.jpg"
             },
             {
@@ -489,13 +496,13 @@ if __name__ == '__main__':
             {
                 "title": "Cider Tasting Event",
                 "description": "Taste a variety of ciders at our tasting event.",
-                "date": date(2024, 7, 27),
+                "date": date(2024, 9, 27),
                 "image_url": "https://example.com/images/cider_tasting.jpg"
             },
             {
                 "title": "Literary Salon",
                 "description": "Join authors for a discussion on literature and writing.",
-                "date": date(2024, 8, 14),
+                "date": date(2024, 9, 14),
                 "image_url": "https://example.com/images/literary_salon.jpg"
             },
             {
@@ -511,7 +518,7 @@ if __name__ == '__main__':
             if spaces and users:
                 space = spaces[i % len(spaces)]
                 user = users[i % len(users)]
-                
+                            
                 event_data = sample_events[i % len(sample_events)]
                 event = Event(
                     title=f"{event_data['title']} - Edition {i+1}",

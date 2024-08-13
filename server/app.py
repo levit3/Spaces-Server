@@ -470,6 +470,7 @@ class Spaces(Resource):
         location = data.get('password')
         price_per_hour = data.get('balance')
         status = data.get('status')
+        capacity = data.get('capacity')
 
         space = Space(
             title=title,
@@ -477,6 +478,7 @@ class Spaces(Resource):
             location=location,
             price_per_hour=price_per_hour,
             status=status,
+            capacity=capacity,
         )
         db.session.add(space)
         db.session.commit()
@@ -568,6 +570,7 @@ class Events(Resource):
         date = data.get('date')
         organizer_id = 92
         space_id = data.get('space_id')
+        image_url = data.get('image_url')
 
         if not organizer_id:
             return make_response({"error": "User is not logged in or session has expired"}, 400)
@@ -577,7 +580,9 @@ class Events(Resource):
             description=description,
             date=date,
             organizer_id=organizer_id,
-            space_id=space_id)
+            space_id=space_id,
+            image_url=image_url
+        )
         db.session.add(event)
         db.session.commit()
         return make_response(event.to_dict(), 201)

@@ -86,6 +86,7 @@ class Space(db.Model, SerializerMixin):
     price_per_hour = db.Column(db.Float, nullable=False)
     status = db.Column(db.String, nullable=False)
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    capacity = db.Column(db.Integer)
 
     user = db.relationship('User', back_populates='spaces')
     reviews = db.relationship('Review', back_populates='space')
@@ -242,7 +243,7 @@ class Event(db.Model, SerializerMixin):
     date = db.Column(db.Date, nullable=False)
     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
-    image_url = db.Column(db.String, nullable=False)
+    image_url = db.Column(db.String)
 
     serialize_rules = ['-space.events', '-user.events', '-user.spaces', '-space.user', '-space.reviews', '-space.bookings', '-space.space_images', '-space.events', '-user.bookings', '-user.reviews', '-user.payments']
 
