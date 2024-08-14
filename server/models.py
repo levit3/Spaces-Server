@@ -21,7 +21,7 @@ class UserRole(enum.Enum):
 class User(SerializerMixin, db.Model):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking']
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking', '-spaces.space_images']
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
@@ -99,7 +99,7 @@ class Space(db.Model, SerializerMixin):
 class SpaceImages(db.Model, SerializerMixin):
     __tablename__ = 'space_images'
 
-    serialize_rules = ('-space_images',)
+    serialize_rules = ('-space.space_images',)
 
     id = db.Column(db.Integer, primary_key=True)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
@@ -125,7 +125,7 @@ class Booking(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=func.now())
     updated_at = db.Column(db.DateTime, onupdate=func.now())
 
-    serialize_rules = ["-space.bookings", "-user.bookings", "-payment.booking"]
+    serialize_rules = ["-space.bookings", "-user.bookings", "-payment.booking", '-space.space_images']
 
     user = db.relationship('User', back_populates='bookings')
     payment = db.relationship('Payment', back_populates='booking')
@@ -134,7 +134,7 @@ class Booking(db.Model, SerializerMixin):
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
 
-    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review', '-space.events', '-space.bookings', '-user.bookings')
+    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review', '-space.events', '-space.bookings', '-user.bookings', '-space.space_images')
 
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
@@ -244,7 +244,7 @@ class Event(db.Model, SerializerMixin):
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
     image_url = db.Column(db.String)
 
-    serialize_rules = ['-space.events', '-user.events', '-user.spaces', '-space.user', '-space.reviews', '-space.bookings', '-space.space_images', '-space.events', '-user.bookings', '-user.reviews', '-user.payments']
+    serialize_rules = ['-space.events', '-user.events', '-user.spaces', '-space.user', '-space.reviews', '-space.bookings', '-space.space_images', '-space.events', '-user.bookings', '-user.reviews', '-user.payments', '-space.space_images']
 
     space = db.relationship('Space', back_populates='events')
     user = db.relationship('User', back_populates='events')

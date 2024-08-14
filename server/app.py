@@ -99,21 +99,21 @@ def token_required(func):
 
 class Bookings(Resource):
     def get(self):
-        booking = Booking.query.all()
-        return booking.to_dict()
+        bookings = Booking.query.all()
+        return make_response([booking.to_dict() for booking in bookings],200)
     
     def post(self):
         data = request.json
         booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
         db.session.add(booking)
         db.session.commit()
-        return booking.to_dict()
+        return make_response(booking.to_dict(),201)
         
     
 class BookingByID(Resource):
     def get(self, booking_id):
         booking = Booking.query.filter_by(id=booking_id).first()
-        return booking.to_dict()
+        return make_response(booking.to_dict(),200)
     
     def put(self, booking_id):
         booking = Booking.query.get(booking_id)
