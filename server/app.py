@@ -244,7 +244,7 @@ class Spaces(Resource):
         location = data.get('location')
         price_per_hour = data.get('price_per_hour')
         status = data.get('status')
-        tenant_id = 7  # Assuming tenant_id is fixed; otherwise, adjust this logic
+        tenant_id = 7 
 
         if not tenant_id:
             return make_response(jsonify({"error": "Tenant not added"}), 400)
@@ -272,12 +272,12 @@ class SpaceByID(Resource):
         space = Space.query.get(space_id)
         if not space:
             return make_response(jsonify({"error": "Space not found"}), 404)
-        
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
+       
+        for attr in request.json:
+            setattr(space,attr,request.json[attr])
+        db.session.add(space)
         db.session.commit()
-        return make_response(jsonify(space.to_dict()), 200)
+        return make_response(space.to_dict()), 200
 
     def delete(self, space_id):
         space = Space.query.get(space_id)
