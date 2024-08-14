@@ -19,7 +19,6 @@ from datetime import datetime, timedelta
 
 import re
 import logging
-from werkzeug.exceptions import BadRequest
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -100,23 +99,26 @@ def token_required(func):
 
 class Bookings(Resource):
     def get(self):
-        booking_arr = Booking.query.all()
-        bookings = [booking.to_dict() for booking in booking_arr]
-        return make_response(bookings, 200)
+        booking = Booking.query.all()
+        return booking.to_dict()
     
     def post(self):
         data = request.json
-        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
+        datetime_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+        start_date = datetime.strptime(data['start_date'], datetime_format).date()
+        end_date = datetime.strptime(data['end_date'], datetime_format).date()
+        
+        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = start_date, end_date = end_date, total_price = data['total_price'])
         db.session.add(booking)
         db.session.commit()
-        return make_response(booking.to_dict(),200)
+        return make_response(booking.to_dict())
         
     
 class BookingByID(Resource):
     def get(self, booking_id):
         booking = Booking.query.filter_by(id=booking_id).first()
-
-        return make_response(booking.to_dict(),200)
+        return make_response(booking.to_dict())
     
     def put(self, booking_id):
         booking = Booking.query.get(booking_id)
@@ -124,13 +126,13 @@ class BookingByID(Resource):
         for key, value in data.items():
             setattr(booking, key, value)
         db.session.commit()
-        return make_response(booking.to_dict(),200)
+        return booking.to_dict()
 
     def delete(self, booking_id):
         booking = Booking.query.get(booking_id)
         db.session.delete(booking)
         db.session.commit()
-        return make_response(booking.to_dict(),200)
+        return booking.to_dict()
 
     def patch(self, booking_id):
         booking = Booking.query.get(booking_id)
@@ -138,8 +140,7 @@ class BookingByID(Resource):
         for key, value in data.items():
             setattr(booking, key, value)
         db.session.commit()
-        return make_response(booking.to_dict(),200)
-    
+        return booking.to_dict()
 
 
 class Users(Resource):
@@ -148,20 +149,14 @@ class Users(Resource):
         user = [user.to_dict() for user in users]
         return make_response(user)
     
-    def post(self):
-        data = request.get_json()
-        user = User(name = data['name'], email = data['email'], password = data['password'])
-        db.session.add(user)
-        db.session.commit()
-        return make_response(user.to_dict(),200)
+    
     
 
 class UserByID(Resource):
-    #@token_required
+    # @token_required
     def get(self, user_id):
         # if current_user.id != user_id:
         #     return jsonify({'message': 'Unauthorized'}), 403
-
         user = User.query.filter_by(id = user_id).first()
         return make_response(user.to_dict(), 200)
     
@@ -253,14 +248,13 @@ class Payments(Resource):
     def get(self):
         payments = Payment.query.all()
         payment = [payment.to_dict() for payment in payments]
-        return payment
-    
+        return make_response(payment)
+
     def post(self):
         data = request.get_json()
         if not data:
             return {"error": "No JSON data provided"}, 400
 
-        # Extract and validate required fields for payment creation
         amount = data.get('amount')
         if not amount:
             return {"error": "Payment amount is required"}, 400
@@ -270,14 +264,16 @@ class Payments(Resource):
             return {"error": "Payment method is required"}, 400
 
         # Create the payment object
-        payment = Payment(amount=amount, status='initiated')
+        payment = Payment(amount=amount, payment_status='initiated', user_id=data['user_id'], booking_id=data['booking_id'], payment_method=data['payment_method'])
         db.session.add(payment)
         db.session.commit()
 
         try:
             if payment_method == 'mpesa':
+                print("mpesa")
                 return self.initiate_mpesa_payment(payment, data)
             elif payment_method == 'paypal':
+                print("paypal")
                 return self.initiate_paypal_payment(payment)
             else:
                 return {"error": "Invalid payment method"}, 400
@@ -286,22 +282,22 @@ class Payments(Resource):
             return {"error": "An error occurred while processing the payment", "details": str(e)}, 500
 
 # @token_required  
-def initiate_mpesa_payment(self, payment, data):
-    phone_number = data.get('phone_number')
-    if not phone_number:
-        return {"error": "Phone number is required"}, 400
+    def initiate_mpesa_payment(self, payment, data):
+        phone_number = data.get('phone_number')
+        if not phone_number:
+            return {"error": "Phone number is required"}, 400
 
-    phone_number = validate_and_format_phone_number(phone_number)
+        phone_number = validate_and_format_phone_number(phone_number)
 
-    access_token = get_oauth_token()
+        access_token = get_oauth_token()
 
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
+        timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+        password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
 
-    headers = {
-        'Content-Type': 'application/json',
-        'Authorization': f'Bearer {access_token}'
-    }
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {access_token}'
+        }
 
         payload = {
             "BusinessShortCode": int(shortcode),
@@ -317,7 +313,7 @@ def initiate_mpesa_payment(self, payment, data):
             "TransactionDesc": f"Payment for order {payment.id}"
         }
 
-    logging.debug(f"Payload: {payload}")
+        logging.debug(f"Payload: {payload}")
 
         try:
             response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
@@ -325,7 +321,7 @@ def initiate_mpesa_payment(self, payment, data):
                                     json=payload)
             response.raise_for_status()
 
-        logging.debug(f"M-Pesa API Response: {response.text}")
+            logging.debug(f"M-Pesa API Response: {response.text}")
 
             if response.status_code == 200:
                 payment.status = 'pending'
@@ -360,11 +356,11 @@ def initiate_mpesa_payment(self, payment, data):
                     "currency": "USD"},
                 "description": f"Payment for order {payment.id}"}]})
 
-    if paypal_payment.create():
-        payment.status = 'pending'
-        payment.payment_method = 'paypal'
-        payment.paypal_payment_id = paypal_payment.id
-        db.session.commit()
+        if paypal_payment.create():
+            payment.status = 'pending'
+            payment.payment_method = 'paypal'
+            payment.paypal_payment_id = paypal_payment.id
+            db.session.commit()
 
             for link in paypal_payment.links:
                 if link.rel == "approval_url":
@@ -373,13 +369,16 @@ def initiate_mpesa_payment(self, payment, data):
         else:
             return {"error": paypal_payment.error}, 400
 
-
-        
 class PaymentByID(Resource):
     # @token_required  
     def get(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        return payment.to_dict()
+        payment = Payment.query.filter_by(id=payment_id).first()
+        if payment:
+            result = payment.to_dict()
+            print("Result to return:", result)
+            return make_response(jsonify(payment.to_dict()), 200)
+        else:
+            return make_response(jsonify({"error": "Payment not found"}), 404)
 
     # @token_required  
     def put(self, payment_id):
@@ -388,7 +387,7 @@ class PaymentByID(Resource):
         for key, value in data.items():
             setattr(payment, key, value)
         db.session.commit()
-        return payment.to_dict()
+        return make_response(payment.to_dict(), 200)
 
     # @token_required
     def delete(self, payment_id):
@@ -404,7 +403,121 @@ class PaymentByID(Resource):
         for key, value in data.items():
             setattr(payment, key, value)
         db.session.commit()
-        return payment.to_dict()
+        return make_response(payment.to_dict(), 200)
+
+#     # @token_required  
+#     def post(self, payment_id):
+#         payment = db.session.get(Payment, payment_id)
+#         if not payment:
+#             return {"error": "Payment not found"}, 404
+
+#         data = request.get_json()
+#         if not data:
+#             return {"error": "No JSON data provided"}, 400
+
+#         payment_method = data.get('payment_method')
+#         if not payment_method:
+#             return {"error": "Payment method is required"}, 400
+
+#         try:
+#             if payment_method == 'mpesa':
+#                 return self.initiate_mpesa_payment(payment, data)
+#             elif payment_method == 'paypal':
+#                 return self.initiate_paypal_payment(payment)
+#             else:
+#                 return {"error": "Invalid payment method"}, 400
+#         except Exception as e:
+#             logging.error(f"Error processing payment: {str(e)}")
+#             return {"error": "An error occurred while processing the payment", "details": str(e)}, 500
+
+#     # @token_required  
+#     def initiate_mpesa_payment(self, payment, data):
+#         phone_number = data.get('phone_number')
+#         if not phone_number:
+#             return {"error": "Phone number is required"}, 400
+
+#         phone_number = validate_and_format_phone_number(phone_number)
+
+#         access_token = get_oauth_token()
+
+#         timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+#         password = base64.b64encode((shortcode + passkey + timestamp).encode()).decode()
+
+#         headers = {
+#             'Content-Type': 'application/json',
+#             'Authorization': f'Bearer {access_token}'
+#         }
+
+#         payload = {
+#             "BusinessShortCode": int(shortcode),
+#             "Password": password,
+#             "Timestamp": timestamp,
+#             "TransactionType": "CustomerPayBillOnline",
+#             # "Amount": int(payment.amount),
+#             "Amount": int(1),
+#             "PartyA": int(phone_number),
+#             "PartyB": int(shortcode),
+#             "PhoneNumber": int(phone_number),
+#             "CallBackURL": callback_url,
+#             "AccountReference": f"Payment{payment.id}",
+#             "TransactionDesc": f"Payment for order {payment.id}"
+#         }
+
+#         logging.debug(f"Payload: {payload}")
+
+#         try:
+#             response = requests.post('https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+#                                      headers=headers,
+#                                      json=payload)
+#             response.raise_for_status()
+
+#             logging.debug(f"M-Pesa API Response: {response.text}")
+
+#             if response.status_code == 200:
+#                 payment.status = 'pending'
+#                 payment.payment_method = 'mpesa'
+#                 db.session.commit()
+#                 return response.json(), 200
+#             else:
+#                 return {"error": "M-Pesa request failed", "details": response.text}, response.status_code
+#         except requests.exceptions.RequestException as e:
+#             logging.error(f"Error making request to M-Pesa API: {str(e)}")
+#             return {"error": "Failed to communicate with M-Pesa API", "details": str(e)}, 500
+        
+#     # @token_required
+#     def initiate_paypal_payment(self, payment):
+#         paypal_payment = paypalrestsdk.Payment({
+#             "intent": "sale",
+#             "payer": {
+#                 "payment_method": "paypal"},
+#             "redirect_urls": {
+#                 "return_url": f"http://127.0.0.1:5555/api/payment_success/{payment.id}",
+#                 "cancel_url": f"http://127.0.0.1:5555/api/payment_cancel/{payment.id}"},
+#             "transactions": [{
+#                 "item_list": {
+#                     "items": [{
+#                         "name": f"Payment {payment.id}",
+#                         "sku": f"PAYMENT-{payment.id}",
+#                         "price": str(payment.amount),
+#                         "currency": "USD",
+#                         "quantity": 1}]},
+#                 "amount": {
+#                     "total": str(payment.amount),
+#                     "currency": "USD"},
+#                 "description": f"Payment for order {payment.id}"}]})
+
+#         if paypal_payment.create():
+#             payment.status = 'pending'
+#             payment.payment_method = 'paypal'
+#             payment.paypal_payment_id = paypal_payment.id
+#             db.session.commit()
+
+#             for link in paypal_payment.links:
+#                 if link.rel == "approval_url":
+#                     approval_url = str(link.href)
+#                     return {"approval_url": approval_url}, 200
+#         else:
+#             return {"error": paypal_payment.error}, 400
         
 class PaymentSuccess(Resource):
     def get(self, payment_id):
@@ -473,6 +586,7 @@ class Spaces(Resource):
         price_per_hour = data.get('price_per_hour')
         status = data.get('status')
         category = data.get('category')  
+        tenant_id = data.get('tenant_id')
 
         space = Space(
             title=title,
@@ -480,7 +594,8 @@ class Spaces(Resource):
             location=location,
             price_per_hour=price_per_hour,
             status=status,
-            category=category  
+            category=category,
+            tenant_id=tenant_id
         )
         db.session.add(space)
         db.session.commit()
@@ -488,19 +603,18 @@ class Spaces(Resource):
 class SpaceByID(Resource):
     def get(self, space_id):
         space = Space.query.get(space_id)
-
-        if not space:
-            return make_response(jsonify({"error": "Space not found"}), 404)
-        return make_response(jsonify(space.to_dict()), 200)
+        if space is None:
+            return {"message": "Space not found"}, 404
+        return space.to_dict(), 200
 
     def put(self, space_id):
-        space = Space.query.get(space_id)
-        if not space:
-            return make_response(jsonify({"error": "Space not found"}), 404)
-
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return {"message": "Space not found"}, 404
+        data = request.json
+        for attr in data:
+            setattr(space, attr, data[attr])
+        db.session.add(space)
         db.session.commit()
         return space.to_dict(), 200
 
@@ -513,16 +627,15 @@ class SpaceByID(Resource):
         return {"message": "Space deleted successfully"}, 200
 
     def patch(self, space_id):
-        space = Space.query.get(space_id)
+        space = Space.query.filter_by(id=space_id).first()
         if space is None:
             return {"message": "Space not found"}, 404
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
+        data = request.json
+        for attr in data:
+            print(attr, data[attr])
+            setattr(space, attr, data[attr])
         db.session.commit()
-
-        return make_response(jsonify(space.to_dict()), 200)
-
+        return space.to_dict(), 200 
     
 class Signup(Resource):
     def post(self):
@@ -656,7 +769,6 @@ class Events(Resource):
         organizer_id = 92
         space_id = data.get('space_id')
 
-        # Check if organizer_id is present
         if not organizer_id:
             return make_response({"error": "User is not logged in or session has expired"}, 400)
 
@@ -668,12 +780,11 @@ class Events(Resource):
             space_id=space_id)
         db.session.add(event)
         db.session.commit()
-        return make_response(event.to_dict(), 201)
-    
+        return make_response(event.to_dict())
 class EventByID(Resource):
     def get(self, event_id):
         event = Event.query.get(event_id)
-        return make_response(event.to_dict(),200)
+        return make_response(event.to_dict())
 
     def patch(self, id):
         event = Event.query.get(id)
@@ -681,18 +792,21 @@ class EventByID(Resource):
         for key, value in data.items():
             setattr(event, key, value)
         db.session.commit()
-        return make_response(event.to_dict(),200)
+        return make_response(event.to_dict())
 
     def delete(self, id):
         event = Event.query.get(id)
         db.session.delete(event)
         db.session.commit()
-        return make_response(event.to_dict(),200)  
+        return make_response(event.to_dict())  
     
 class SendEmail(Resource):
     def post(self):
         data = request.get_json()
         to = data.get('to')
+        text_part = data.get('textPart')
+        html_part = data.get('htmlPart')
+        print(text_part)
 
         if not to:
             return {"message": "Recipient email is required"}, 400
@@ -718,13 +832,10 @@ class SendEmail(Resource):
                             'Name': 'Recipient Name'
                         }
                     ],
-                    'TemplateID': 6185052,  
-                    'TemplateLanguage': True,
+
                     'Subject': 'Event Booking',
-                    'Variables': {
-                        'event_date': 'November 15th',
-                        'message': 'Attending a trade show...'
-                    }
+                    "TextPart": text_part,
+                    "HTMLPart": html_part
                 }
             ]
         }
@@ -755,7 +866,6 @@ api.add_resource(Users, '/api/users')
 api.add_resource(UserByID, '/api/users/<int:user_id>/')
 api.add_resource(Bookings, '/api/bookings')
 api.add_resource(BookingByID, '/api/bookings/<int:booking_id>/')
-api.add_resource(Spaces, '/api/spaces')
 api.add_resource(Spaces, '/api/spaces')
 api.add_resource(SpaceByID, '/api/spaces/<int:space_id>/')
 api.add_resource(Signup, '/api/signup')
