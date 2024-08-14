@@ -118,7 +118,7 @@ class Bookings(Resource):
 class BookingByID(Resource):
     def get(self, booking_id):
         booking = Booking.query.filter_by(id=booking_id).first()
-        return booking.to_dict()
+        return make_response(booking.to_dict())
     
     def put(self, booking_id):
         booking = Booking.query.get(booking_id)
@@ -248,14 +248,13 @@ class Payments(Resource):
     def get(self):
         payments = Payment.query.all()
         payment = [payment.to_dict() for payment in payments]
-        return payment
+        return make_response(payment)
 
     def post(self):
         data = request.get_json()
         if not data:
             return {"error": "No JSON data provided"}, 400
 
-        # Extract and validate required fields for payment creation
         amount = data.get('amount')
         if not amount:
             return {"error": "Payment amount is required"}, 400
@@ -265,14 +264,16 @@ class Payments(Resource):
             return {"error": "Payment method is required"}, 400
 
         # Create the payment object
-        payment = Payment(amount=amount, status='initiated')
+        payment = Payment(amount=amount, payment_status='initiated', user_id=data['user_id'], booking_id=data['booking_id'], payment_method=data['payment_method'])
         db.session.add(payment)
         db.session.commit()
 
         try:
             if payment_method == 'mpesa':
+                print("mpesa")
                 return self.initiate_mpesa_payment(payment, data)
             elif payment_method == 'paypal':
+                print("paypal")
                 return self.initiate_paypal_payment(payment)
             else:
                 return {"error": "Invalid payment method"}, 400
@@ -371,8 +372,13 @@ class Payments(Resource):
 class PaymentByID(Resource):
     # @token_required  
     def get(self, payment_id):
-        payment = Payment.query.get(payment_id)
-        return payment.to_dict()
+        payment = Payment.query.filter_by(id=payment_id).first()
+        if payment:
+            result = payment.to_dict()
+            print("Result to return:", result)
+            return make_response(jsonify(payment.to_dict()), 200)
+        else:
+            return make_response(jsonify({"error": "Payment not found"}), 404)
 
     # @token_required  
     def put(self, payment_id):
@@ -381,7 +387,7 @@ class PaymentByID(Resource):
         for key, value in data.items():
             setattr(payment, key, value)
         db.session.commit()
-        return payment.to_dict()
+        return make_response(payment.to_dict(), 200)
 
     # @token_required
     def delete(self, payment_id):
@@ -397,7 +403,7 @@ class PaymentByID(Resource):
         for key, value in data.items():
             setattr(payment, key, value)
         db.session.commit()
-        return payment.to_dict()
+        return make_response(payment.to_dict(), 200)
 
 #     # @token_required  
 #     def post(self, payment_id):
@@ -580,6 +586,7 @@ class Spaces(Resource):
         price_per_hour = data.get('price_per_hour')
         status = data.get('status')
         category = data.get('category')  
+        tenant_id = data.get('tenant_id')
 
         space = Space(
             title=title,
@@ -587,7 +594,8 @@ class Spaces(Resource):
             location=location,
             price_per_hour=price_per_hour,
             status=status,
-            category=category  
+            category=category,
+            tenant_id=tenant_id
         )
         db.session.add(space)
         db.session.commit()
@@ -600,12 +608,13 @@ class SpaceByID(Resource):
         return space.to_dict(), 200
 
     def put(self, space_id):
-        space = Space.query.get(space_id)
+        space = Space.query.filter_by(id=space_id).first()
         if space is None:
             return {"message": "Space not found"}, 404
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
+        data = request.json
+        for attr in data:
+            setattr(space, attr, data[attr])
+        db.session.add(space)
         db.session.commit()
         return space.to_dict(), 200
 
@@ -618,14 +627,15 @@ class SpaceByID(Resource):
         return {"message": "Space deleted successfully"}, 200
 
     def patch(self, space_id):
-        space = Space.query.get(space_id)
+        space = Space.query.filter_by(id=space_id).first()
         if space is None:
             return {"message": "Space not found"}, 404
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
+        data = request.json
+        for attr in data:
+            print(attr, data[attr])
+            setattr(space, attr, data[attr])
         db.session.commit()
-        return space.to_dict(), 200   
+        return space.to_dict(), 200 
     
 class Signup(Resource):
     def post(self):
@@ -794,6 +804,9 @@ class SendEmail(Resource):
     def post(self):
         data = request.get_json()
         to = data.get('to')
+        text_part = data.get('textPart')
+        html_part = data.get('htmlPart')
+        print(text_part)
 
         if not to:
             return {"message": "Recipient email is required"}, 400
@@ -819,13 +832,10 @@ class SendEmail(Resource):
                             'Name': 'Recipient Name'
                         }
                     ],
-                    'TemplateID': 6185052,  
-                    'TemplateLanguage': True,
+
                     'Subject': 'Event Booking',
-                    'Variables': {
-                        'event_date': 'November 15th',
-                        'message': 'Attending a trade show...'
-                    }
+                    "TextPart": text_part,
+                    "HTMLPart": html_part
                 }
             ]
         }
