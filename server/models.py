@@ -11,14 +11,77 @@ from config import db, bcrypt
 import re
 import datetime
 
+# class UserRole(enum.Enum):
+#     USER = "user"
+#     TENANT = "tenant"
+#     ADMIN = "admin"
+
+# ## Users
+
+# class User(SerializerMixin, db.Model):
+#     __tablename__ = 'users'
+
+#     serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking']
+
+#     id = db.Column(db.Integer, primary_key=True)
+#     email = db.Column(db.String, unique=True, nullable=False)
+#     _password = db.Column(db.String, nullable=False)
+#     name = db.Column(db.String, nullable=False)
+#     profile_picture = db.Column(db.String)
+#     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
+
+#     spaces = db.relationship('Space', back_populates='user')
+#     reviews = db.relationship("Review", back_populates='user')
+#     bookings = db.relationship("Booking", back_populates='user')
+#     payments = db.relationship('Payment', back_populates='user')
+#     events = db.relationship("Event", back_populates='user')
+
+#     def __repr__(self):
+#         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
+
+#     @hybrid_property
+#     def password(self):
+#         return self._password
+
+#     @password.setter
+#     def password(self, password):
+#         if (
+#             len(password) < 8 or
+#             not re.search(r"[A-Z]", password) or
+#             not re.search(r"[a-z]", password) or
+#             not re.search(r"[0-9]", password) or
+#             not re.search(r"[\W_]", password)
+#         ):
+#             raise ValueError(
+#                 'Password MUST be at least 8 digits, include uppercase, lowercase, numbers & special characters.'
+#             )
+
+#         password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
+#         self._password = password_hash.decode('utf-8')
+
+#     def authenticate(self, password):
+#         return bcrypt.check_password_hash(self._password, password.encode('utf-8'))
+
+#     @validates('email')
+#     def validate_email(self, key, email):
+#         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+#             raise ValueError('Invalid email address')
+#         existing_email = User.query.filter_by(email=email).first()
+#         if existing_email:
+#             raise ValueError('Email already exists')
+#         return email
+
 class UserRole(enum.Enum):
     USER = "user"
     TENANT = "tenant"
     ADMIN = "admin"
 
-## Users
+class RoleRequestStatus(enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
-class User(SerializerMixin, db.Model):
+class User(db.Model):
     __tablename__ = 'users'
 
     serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking']
@@ -35,6 +98,7 @@ class User(SerializerMixin, db.Model):
     bookings = db.relationship("Booking", back_populates='user')
     payments = db.relationship('Payment', back_populates='user')
     events = db.relationship("Event", back_populates='user')
+    role_requests = db.relationship('RoleRequest', back_populates='user')
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
@@ -62,6 +126,29 @@ class User(SerializerMixin, db.Model):
     def authenticate(self, password):
         return bcrypt.check_password_hash(self._password, password.encode('utf-8'))
 
+
+    def request_tenant_role(self):
+        if self.role == UserRole.TENANT:
+            raise ValueError("User already has tenant role.")
+        existing_request = RoleRequest.query.filter_by(user_id=self.id, status=RoleRequestStatus.PENDING).first()
+        if existing_request:
+            raise ValueError("There is already a pending request.")
+        new_request = RoleRequest(user_id=self.id, status=RoleRequestStatus.PENDING)
+        db.session.add(new_request)
+        db.session.commit()
+
+    def approve_tenant_role(self):
+        if self.role == UserRole.TENANT:
+            raise ValueError("User already has tenant role.")
+        self.role = UserRole.TENANT
+        db.session.commit()
+
+    def remove_tenant_role(self):
+        if self.role != UserRole.TENANT:
+            raise ValueError("User does not have tenant role.")
+        self.role = UserRole.USER
+        db.session.commit()
+
     @validates('email')
     def validate_email(self, key, email):
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
@@ -71,11 +158,41 @@ class User(SerializerMixin, db.Model):
             raise ValueError('Email already exists')
         return email
 
-## Spaces
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'name': self.name,
+            'category': self.role.name,
+            'profile_picture': self.profile_picture,
+            'role': self.role.value
+        }
+
+class RoleRequest(db.Model):
+    __tablename__ = 'role_requests'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.Enum(RoleRequestStatus), default=RoleRequestStatus.PENDING, nullable=False)
+    
+    user = db.relationship('User', back_populates='role_requests')
+
+    def __repr__(self):
+        return f"<RoleRequest(id={self.id}, user_id={self.user_id}, status={self.status})>"
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "status": self.status.name,  
+        }
+
+
+# Spaces
 class Space(db.Model, SerializerMixin):
     __tablename__ = 'spaces'
 
-    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user.spaces', '-bookings.payment.booking', '-bookings.user.reviews', '-bookings.user.bookings', '-bookings.user.payments']
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user.spaces', '-bookings.payment.booking', '-bookings.user.reviews', '-bookings.user.bookings', '-bookings.user.payments', '-bookings.payment']
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
@@ -94,6 +211,42 @@ class Space(db.Model, SerializerMixin):
 
     def __repr__(self):
         return f'<Space {self.title} description: {self.description}>'
+    
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'title': self.title,
+            'description': self.description,
+            'price_per_hour': self.price_per_hour,
+            'status': self.status,
+            'category': self.category,
+            'tenant_id': self.tenant_id,
+            'location': self.location,
+            'user': self.user.to_dict() if self.user else None
+        }
+# class Space(db.Model, SerializerMixin):
+#     __tablename__ = 'spaces'
+
+#     serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user.spaces', '-bookings.payment.booking', '-bookings.user.reviews', '-bookings.user.bookings', '-bookings.user.payments']
+
+#     id = db.Column(db.Integer, primary_key=True)
+#     title = db.Column(db.String, nullable=False)
+#     description = db.Column(db.String, nullable=False)
+#     location = db.Column(db.String, nullable=False)
+#     price_per_hour = db.Column(db.Float, nullable=False)
+#     status = db.Column(db.String, nullable=False)
+#     category = db.Column(db.String, nullable=False)  
+#     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+#     user = db.relationship('User', back_populates='spaces')
+#     reviews = db.relationship('Review', back_populates='space')
+#     space_images = db.relationship('SpaceImages', back_populates='space')
+#     bookings = db.relationship('Booking', back_populates='space')
+#     events = db.relationship('Event', back_populates='space')
+
+#     def __repr__(self):
+#         return f'<Space {self.title} description: {self.description}>'
 
 class SpaceImages(db.Model, SerializerMixin):
     __tablename__ = 'space_images'
@@ -108,6 +261,19 @@ class SpaceImages(db.Model, SerializerMixin):
 
     def __repr__(self):
         return f'<SpaceImage {self.image_url}>'
+# class SpaceImages(db.Model, SerializerMixin):
+#     __tablename__ = 'space_images'
+
+#     serialize_rules = ('-space_images',)
+
+#     id = db.Column(db.Integer, primary_key=True)
+#     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+#     image_url = db.Column(db.String, nullable=False)
+
+#     space = db.relationship('Space', back_populates='space_images')
+
+#     def __repr__(self):
+#         return f'<SpaceImage {self.image_url}>'
 
 # Bookings
 
