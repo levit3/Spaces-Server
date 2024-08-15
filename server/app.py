@@ -220,7 +220,7 @@ class Reviews(Resource):
 class ReviewByID(Resource):
     def get(self, review_id):
         review = Review.query.get_or_404(review_id)
-        return review.to_dict(), 200
+        return make_response(review.to_dict(), 200)
 
     # @token_required  
     def put(self, review_id):
@@ -606,7 +606,7 @@ class SpaceByID(Resource):
         space = Space.query.get(space_id)
         if space is None:
             return {"message": "Space not found"}, 404
-        return space.to_dict(), 200
+        return make_response(space.to_dict(), 200)
 
     def put(self, space_id):
         space = Space.query.filter_by(id=space_id).first()

@@ -21,7 +21,7 @@ class UserRole(enum.Enum):
 class User(SerializerMixin, db.Model):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking', '-spaces.bookings', '-events.space', '-events.user', '-spaces.events']
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking', '-spaces.bookings', '-events.space', '-events.user', '-spaces.events', '-space.space_images', '-bookings.space.space_images', '-reviews.space']
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
@@ -75,7 +75,7 @@ class User(SerializerMixin, db.Model):
 class Space(db.Model, SerializerMixin):
     __tablename__ = 'spaces'
 
-    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user','-events.user', '-events.space', '-bookings.payment']
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user','-events.user', '-events.space', '-bookings.payment', '-space_images.space', ]
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
@@ -123,7 +123,7 @@ class Booking(db.Model, SerializerMixin):
     created_at = db.Column(db.DateTime, default=func.now())
     updated_at = db.Column(db.DateTime, onupdate=func.now())
 
-    serialize_rules = [ '-user.bookings', '-space.bookings', '-payment.booking', '-payment.user', '-space.events', '-space.reviews', '-space.user', '-user.spaces', '-user.reviews', '-user.payments', '-user.events']
+    serialize_rules = [ '-user.bookings', '-space.bookings', '-payment.booking', '-payment.user', '-space.events', '-space.reviews', '-space.user', '-user.spaces', '-user.reviews', '-user.payments', '-user.events', '-space.space_images']
 
     user = db.relationship('User', back_populates='bookings')
     payment = db.relationship('Payment', back_populates='booking')
@@ -132,7 +132,7 @@ class Booking(db.Model, SerializerMixin):
 class Review(db.Model, SerializerMixin):
     __tablename__ = 'reviews'
 
-    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review', '-space.events', '-space.bookings', '-user.bookings')
+    serialize_rules = ('-space.reviews', '-user.reviews', '-space.user', '-images.review', '-space.events', '-space.bookings', '-user.bookings', '-user.events')
 
     id = db.Column(db.Integer, primary_key=True)
     rating = db.Column(db.Integer, nullable=False)
