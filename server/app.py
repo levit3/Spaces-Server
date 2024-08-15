@@ -100,7 +100,8 @@ def token_required(func):
 class Bookings(Resource):
     def get(self):
         booking = Booking.query.all()
-        return booking.to_dict()
+        bookings = [b.to_dict() for b in booking]
+        return make_response(bookings)
     
     def post(self):
         data = request.json
@@ -637,6 +638,15 @@ class SpaceByID(Resource):
         db.session.commit()
         return space.to_dict(), 200 
     
+class SpaceImage(Resource):
+    def get(self, space_id):
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return {"message": "Space not found"}, 404
+        images = space.space_images
+        image_urls = [image.image_url for image in images]
+        return make_response({"image_urls": image_urls}, 200)
+    
 class Signup(Resource):
     def post(self):
         request_json = request.get_json()
@@ -873,6 +883,7 @@ api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
 api.add_resource(Events, '/api/events')
 api.add_resource(EventByID, '/api/events/<int:event_id>/')
+api.add_resource(SpaceImage, '/api/space-images/<int:space_id>/')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)

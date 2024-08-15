@@ -98,7 +98,7 @@ class Space(db.Model, SerializerMixin):
 class SpaceImages(db.Model, SerializerMixin):
     __tablename__ = 'space_images'
 
-    serialize_rules = ('-space_images',)
+    serialize_rules = ('-space.space_images',)
 
     id = db.Column(db.Integer, primary_key=True)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)

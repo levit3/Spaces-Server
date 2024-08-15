@@ -890,7 +890,7 @@ if __name__ == '__main__':
         print(f"Events seeded successfully. Total events: {len(events)}")
         
         
-        spaces = [Space.query.all()]
+        
         space_images = [
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSDukxrvEf8vKC_0xErzjglzDy_AgasRMRxUw&s",
                     "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRh_FpfaZod6mxUYoIs0Sxkk6oEAgSRk0om6g&s",
@@ -979,17 +979,22 @@ if __name__ == '__main__':
                     "https://s3-media0.fl.yelpcdn.com/bphoto/b1l6VLYpB-YPdSsR29IhBQ/o.jpg",
                     "https://s3-media0.fl.yelpcdn.com/bphoto/H4a8CF0oQPYUR18ZSKtOJw/o.jpg",
                     ]
-        
-        k = 1
-        for i in range(1, len(spaces)):
-          for j in range(1, len(space_images)):
-            while k<5:
-                space_img=SpaceImages(space_id=i, image_url=space_images[j])
-                db.session.add(space_img)
-                db.session.commit()
-                print(SpaceImages.query.filter_by(id=space_img.id).first())
-                k+=1
+        spaces = Space.query.limit(20).all()
+        for space in spaces:
+            print(space)
 
-         
-        print(f"Space image data seeded successfully. Total space images: {len(space_images)}")
+            if len(space_images) >= 4:
+                assigned_images = space_images[:4]
+                space_images = space_images[4:]  
+                for img_url in assigned_images:
+                    space_image = SpaceImages(
+                        space_id=space.id,
+                        image_url=img_url
+                    )
+                    db.session.add(space_image)
+            else:
+                print("Not enough images left for assignment.")
+
+        db.session.commit()
+        print(f"Space image data seeded successfully. Total remaining space images: {len(space_images)}")
 
