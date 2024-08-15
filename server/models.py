@@ -9,67 +9,7 @@ import enum
 from sqlalchemy import func
 from config import db, bcrypt
 import re
-import datetime
-
-# class UserRole(enum.Enum):
-#     USER = "user"
-#     TENANT = "tenant"
-#     ADMIN = "admin"
-
-# ## Users
-
-# class User(SerializerMixin, db.Model):
-#     __tablename__ = 'users'
-
-#     serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking']
-
-#     id = db.Column(db.Integer, primary_key=True)
-#     email = db.Column(db.String, unique=True, nullable=False)
-#     _password = db.Column(db.String, nullable=False)
-#     name = db.Column(db.String, nullable=False)
-#     profile_picture = db.Column(db.String)
-#     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
-
-#     spaces = db.relationship('Space', back_populates='user')
-#     reviews = db.relationship("Review", back_populates='user')
-#     bookings = db.relationship("Booking", back_populates='user')
-#     payments = db.relationship('Payment', back_populates='user')
-#     events = db.relationship("Event", back_populates='user')
-
-#     def __repr__(self):
-#         return f"<User(id={self.id}, email={self.email}, name={self.name}, role={self.role})>"
-
-#     @hybrid_property
-#     def password(self):
-#         return self._password
-
-#     @password.setter
-#     def password(self, password):
-#         if (
-#             len(password) < 8 or
-#             not re.search(r"[A-Z]", password) or
-#             not re.search(r"[a-z]", password) or
-#             not re.search(r"[0-9]", password) or
-#             not re.search(r"[\W_]", password)
-#         ):
-#             raise ValueError(
-#                 'Password MUST be at least 8 digits, include uppercase, lowercase, numbers & special characters.'
-#             )
-
-#         password_hash = bcrypt.generate_password_hash(password.encode('utf-8'))
-#         self._password = password_hash.decode('utf-8')
-
-#     def authenticate(self, password):
-#         return bcrypt.check_password_hash(self._password, password.encode('utf-8'))
-
-#     @validates('email')
-#     def validate_email(self, key, email):
-#         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-#             raise ValueError('Invalid email address')
-#         existing_email = User.query.filter_by(email=email).first()
-#         if existing_email:
-#             raise ValueError('Email already exists')
-#         return email
+from datetime import datetime
 
 class UserRole(enum.Enum):
     USER = "user"
@@ -84,13 +24,13 @@ class RoleRequestStatus(enum.Enum):
 class User(db.Model):
     __tablename__ = 'users'
 
-    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking']
+    serialize_rules = ['-spaces.user', '-reviews.user', '-bookings.user', '-payments.user', '-spaces.reviews', '-reviews.space.user', '-bookings.payment.booking', '-spaces.bookings', '-events.space', '-events.user', '-spaces.events']
 
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String, unique=True, nullable=False)
     _password = db.Column(db.String, nullable=False)
     name = db.Column(db.String, nullable=False)
-    profile_picture = db.Column(db.String)
+    profile_picture = db.Column(db.String, default = "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png?20150327203541")
     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
 
     spaces = db.relationship('Space', back_populates='user')
@@ -192,7 +132,7 @@ class RoleRequest(db.Model):
 class Space(db.Model, SerializerMixin):
     __tablename__ = 'spaces'
 
-    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user.spaces', '-bookings.payment.booking', '-bookings.user.reviews', '-bookings.user.bookings', '-bookings.user.payments', '-bookings.payment']
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user','-events.user', '-events.space', '-bookings.payment']
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
@@ -200,7 +140,7 @@ class Space(db.Model, SerializerMixin):
     location = db.Column(db.String, nullable=False)
     price_per_hour = db.Column(db.Float, nullable=False)
     status = db.Column(db.String, nullable=False)
-    category = db.Column(db.String, nullable=False)  
+    category = db.Column(db.String)  
     tenant_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
     user = db.relationship('User', back_populates='spaces')
@@ -286,11 +226,10 @@ class Booking(db.Model, SerializerMixin):
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False)
     total_price = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String, nullable=False)
     created_at = db.Column(db.DateTime, default=func.now())
     updated_at = db.Column(db.DateTime, onupdate=func.now())
 
-    serialize_rules = ["-space.bookings", "-user.bookings", "-payment.booking"]
+    serialize_rules = [ '-user.bookings', '-space.bookings', '-payment.booking', '-payment.user', '-space.events', '-space.reviews', '-space.user', '-user.spaces', '-user.reviews', '-user.payments', '-user.events']
 
     user = db.relationship('User', back_populates='bookings')
     payment = db.relationship('Payment', back_populates='booking')
@@ -407,6 +346,7 @@ class Event(db.Model, SerializerMixin):
     date = db.Column(db.Date, nullable=False)
     organizer_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    image_url = db.Column(db.String, nullable=False)
 
     serialize_rules = ['-space.events', '-user.events', '-user.spaces', '-space.user', '-space.reviews', '-space.bookings', '-space.space_images', '-space.events', '-user.bookings', '-user.reviews', '-user.payments']
 
@@ -444,6 +384,8 @@ class Event(db.Model, SerializerMixin):
 
     @validates('date')
     def validate_date(self, key, date):
-        if date < datetime.date.today():
-            raise ValueError('Date must be in the future')
+        if isinstance(date, str):
+            date = datetime.strptime(date, '%Y-%m-%d').date()
+        if date < datetime.today().date():
+            raise ValueError("Event date cannot be in the past")
         return date

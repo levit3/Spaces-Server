@@ -104,16 +104,21 @@ class Bookings(Resource):
     
     def post(self):
         data = request.json
-        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = data['start_date'], end_date = data['end_date'], total_price = data['total_price'],status = data['status'], created_at = data['created_at'], updated_at = data['updated_at'])
+        datetime_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+
+        start_date = datetime.strptime(data['start_date'], datetime_format).date()
+        end_date = datetime.strptime(data['end_date'], datetime_format).date()
+        
+        booking = Booking(user_id = data['user_id'], space_id = data['space_id'], start_date = start_date, end_date = end_date, total_price = data['total_price'])
         db.session.add(booking)
         db.session.commit()
-        return booking.to_dict()
+        return make_response(booking.to_dict())
         
     
 class BookingByID(Resource):
     def get(self, booking_id):
         booking = Booking.query.filter_by(id=booking_id).first()
-        return booking.to_dict()
+        return make_response(booking.to_dict())
     
     def put(self, booking_id):
         booking = Booking.query.get(booking_id)
@@ -145,17 +150,18 @@ class Users(Resource):
         if current_user.role != 'admin':
             return jsonify({'message': 'Unauthorized'}), 403
         users = User.query.all()
-        return make_response([user.to_dict() for user in users], 200)
+        user = [user.to_dict() for user in users]
+        return make_response(user)
+    
+    
+    
 
 class UserByID(Resource):
-    @token_required
-    def get(self, user_id, current_user):
-    
-        if current_user.id != user_id and current_user.role != 'admin':
-            return jsonify({'message': 'Unauthorized'}), 403
-        user = User.query.get(user_id)
-        if not user:
-            return jsonify({'message': 'User not found'}), 404
+    # @token_required
+    def get(self, user_id):
+        # if current_user.id != user_id:
+        #     return jsonify({'message': 'Unauthorized'}), 403
+        user = User.query.filter_by(id = user_id).first()
         return make_response(user.to_dict(), 200)
     
     @token_required      
@@ -329,14 +335,13 @@ class Payments(Resource):
     def get(self):
         payments = Payment.query.all()
         payment = [payment.to_dict() for payment in payments]
-        return payment
+        return make_response(payment)
 
     def post(self):
         data = request.get_json()
         if not data:
             return {"error": "No JSON data provided"}, 400
 
-        # Extract and validate required fields for payment creation
         amount = data.get('amount')
         if not amount:
             return {"error": "Payment amount is required"}, 400
@@ -346,14 +351,16 @@ class Payments(Resource):
             return {"error": "Payment method is required"}, 400
 
         # Create the payment object
-        payment = Payment(amount=amount, status='initiated')
+        payment = Payment(amount=amount, payment_status='initiated', user_id=data['user_id'], booking_id=data['booking_id'], payment_method=data['payment_method'])
         db.session.add(payment)
         db.session.commit()
 
         try:
             if payment_method == 'mpesa':
+                print("mpesa")
                 return self.initiate_mpesa_payment(payment, data)
             elif payment_method == 'paypal':
+                print("paypal")
                 return self.initiate_paypal_payment(payment)
             else:
                 return {"error": "Invalid payment method"}, 400
@@ -361,7 +368,7 @@ class Payments(Resource):
             logging.error(f"Error processing payment: {str(e)}")
             return {"error": "An error occurred while processing the payment", "details": str(e)}, 500
 
-    # @token_required  
+# @token_required  
     def initiate_mpesa_payment(self, payment, data):
         phone_number = data.get('phone_number')
         if not phone_number:
@@ -449,36 +456,41 @@ class Payments(Resource):
         else:
             return {"error": paypal_payment.error}, 400
 
-# class PaymentByID(Resource):
-#     # @token_required  
-#     def get(self, payment_id):
-#         payment = Payment.query.get(payment_id)
-#         return payment.to_dict()
+class PaymentByID(Resource):
+    # @token_required  
+    def get(self, payment_id):
+        payment = Payment.query.filter_by(id=payment_id).first()
+        if payment:
+            result = payment.to_dict()
+            print("Result to return:", result)
+            return make_response(jsonify(payment.to_dict()), 200)
+        else:
+            return make_response(jsonify({"error": "Payment not found"}), 404)
 
-#     # @token_required  
-#     def put(self, payment_id):
-#         payment = Payment.query.get(payment_id)
-#         data = request.get_json()
-#         for key, value in data.items():
-#             setattr(payment, key, value)
-#         db.session.commit()
-#         return payment.to_dict()
+    # @token_required  
+    def put(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(payment, key, value)
+        db.session.commit()
+        return make_response(payment.to_dict(), 200)
 
-#     # @token_required
-#     def delete(self, payment_id):
-#         payment = Payment.query.get(payment_id)
-#         db.session.delete(payment)
-#         db.session.commit()
-#         return payment.to_dict()
+    # @token_required
+    def delete(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        db.session.delete(payment)
+        db.session.commit()
+        return payment.to_dict()
     
-#     # @token_required  
-#     def patch(self, payment_id):
-#         payment = Payment.query.get(payment_id)
-#         data = request.get_json()
-#         for key, value in data.items():
-#             setattr(payment, key, value)
-#         db.session.commit()
-#         return payment.to_dict()
+    # @token_required  
+    def patch(self, payment_id):
+        payment = Payment.query.get(payment_id)
+        data = request.get_json()
+        for key, value in data.items():
+            setattr(payment, key, value)
+        db.session.commit()
+        return make_response(payment.to_dict(), 200)
 
 #     # @token_required  
 #     def post(self, payment_id):
@@ -661,6 +673,7 @@ class Spaces(Resource):
         price_per_hour = data.get('price_per_hour')
         status = data.get('status')
         category = data.get('category')  
+        tenant_id = data.get('tenant_id')
 
         space = Space(
             title=title,
@@ -668,7 +681,8 @@ class Spaces(Resource):
             location=location,
             price_per_hour=price_per_hour,
             status=status,
-            category=category  
+            category=category,
+            tenant_id=tenant_id
         )
         db.session.add(space)
         db.session.commit()
@@ -681,12 +695,13 @@ class SpaceByID(Resource):
         return space.to_dict(), 200
 
     def put(self, space_id):
-        space = Space.query.get(space_id)
+        space = Space.query.filter_by(id=space_id).first()
         if space is None:
             return {"message": "Space not found"}, 404
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
+        data = request.json
+        for attr in data:
+            setattr(space, attr, data[attr])
+        db.session.add(space)
         db.session.commit()
         return space.to_dict(), 200
 
@@ -699,14 +714,15 @@ class SpaceByID(Resource):
         return {"message": "Space deleted successfully"}, 200
 
     def patch(self, space_id):
-        space = Space.query.get(space_id)
+        space = Space.query.filter_by(id=space_id).first()
         if space is None:
             return {"message": "Space not found"}, 404
-        data = request.get_json()
-        for key, value in data.items():
-            setattr(space, key, value)
+        data = request.json
+        for attr in data:
+            print(attr, data[attr])
+            setattr(space, attr, data[attr])
         db.session.commit()
-        return space.to_dict(), 200   
+        return space.to_dict(), 200 
     
 class Signup(Resource):
     def post(self):
@@ -836,15 +852,16 @@ class Events(Resource):
         data = request.get_json()
         title = data.get('title')
         description = data.get('description')
-        location = data.get('location')
         date = data.get('date')
-        organizer_id = data.get('user_id')
-        space_id = data.get('space_id')   
+        organizer_id = 92
+        space_id = data.get('space_id')
+
+        if not organizer_id:
+            return make_response({"error": "User is not logged in or session has expired"}, 400)
 
         event = Event(
             title=title,
             description=description,
-            location=location,
             date=date,
             organizer_id=organizer_id,
             space_id=space_id)
@@ -854,7 +871,7 @@ class Events(Resource):
 class EventByID(Resource):
     def get(self, event_id):
         event = Event.query.get(event_id)
-        return [event.to_dict()]
+        return make_response(event.to_dict())
 
     def patch(self, id):
         event = Event.query.get(id)
@@ -874,6 +891,9 @@ class SendEmail(Resource):
     def post(self):
         data = request.get_json()
         to = data.get('to')
+        text_part = data.get('textPart')
+        html_part = data.get('htmlPart')
+        print(text_part)
 
         if not to:
             return {"message": "Recipient email is required"}, 400
@@ -899,13 +919,10 @@ class SendEmail(Resource):
                             'Name': 'Recipient Name'
                         }
                     ],
-                    'TemplateID': 6185052,  
-                    'TemplateLanguage': True,
+
                     'Subject': 'Event Booking',
-                    'Variables': {
-                        'event_date': 'November 15th',
-                        'message': 'Attending a trade show...'
-                    }
+                    "TextPart": text_part,
+                    "HTMLPart": html_part
                 }
             ]
         }
@@ -951,4 +968,3 @@ api.add_resource(EventByID, '/api/events/<int:event_id>/')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)
-
