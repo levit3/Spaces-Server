@@ -100,7 +100,8 @@ def token_required(func):
 class Bookings(Resource):
     def get(self):
         booking = Booking.query.all()
-        return booking.to_dict()
+        bookings = [b.to_dict() for b in booking]
+        return make_response(bookings)
     
     def post(self):
         data = request.json
@@ -187,17 +188,7 @@ class UserByID(Resource):
         db.session.commit()
         return user.to_dict()
     
-class UserSpaces(Resource):
-    def get(self, user_id):
-        # Query to get all spaces associated with the tenant (user_id)
-        spaces = Space.query.filter_by(tenant_id=user_id).all()
-        
-        if spaces:
-            # Convert each space to a dictionary format
-            spaces_list = [space.to_dict() for space in spaces]
-            return jsonify({"spaces": spaces_list})
-        else:
-            return jsonify({"message": "No spaces found for this user"}), 404
+
 
 
 class Reviews(Resource):
@@ -229,7 +220,7 @@ class Reviews(Resource):
 class ReviewByID(Resource):
     def get(self, review_id):
         review = Review.query.get_or_404(review_id)
-        return review.to_dict(), 200
+        return make_response(review.to_dict(), 200)
 
     # @token_required  
     def put(self, review_id):
@@ -615,7 +606,7 @@ class SpaceByID(Resource):
         space = Space.query.get(space_id)
         if space is None:
             return {"message": "Space not found"}, 404
-        return space.to_dict(), 200
+        return make_response(space.to_dict(), 200)
 
     def put(self, space_id):
         space = Space.query.filter_by(id=space_id).first()
@@ -635,18 +626,48 @@ class SpaceByID(Resource):
         db.session.delete(space)
         db.session.commit()
         return {"message": "Space deleted successfully"}, 200
+
     def patch(self, space_id):
-        space = Space.query.get(space_id)
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return {"message": "Space not found"}, 404
+        data = request.json
+        for attr in data:
+            print(attr, data[attr])
+            setattr(space, attr, data[attr])
+        db.session.commit()
+        return space.to_dict(), 200 
+    
+class SpaceImage(Resource):
+    def get(self, space_id):
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return {"message": "Space not found"}, 404
+        images = space.space_images
+        image_urls = [image.image_url for image in images]
+        return make_response({"image_urls": image_urls}, 200)
+    
+    def post(self, space_id):
+        space = Space.query.filter_by(id=space_id).first()
         if space is None:
             return {"message": "Space not found"}, 404
 
         data = request.get_json()
-        for key, value in data.items():
-            if hasattr(space, key):
-                setattr(space, key, value)
-        
+        image_url = data.get('image_url')
+
+        if not image_url:
+            return {"message": "Image URL is required"}, 400
+
+        space_images = []
+        for _ in range(4):
+            space_image = SpaceImage(image_url=image_url, space_id=space_id)
+            db.session.add(space_image)
+            space_images.append(space_image)
+
         db.session.commit()
-        return space.to_dict(), 200
+
+        return make_response([image.to_dict() for image in space_images], 201)
+
     
 class Signup(Resource):
     def post(self):
@@ -777,8 +798,9 @@ class Events(Resource):
         title = data.get('title')
         description = data.get('description')
         date = data.get('date')
-        organizer_id = 92
+        organizer_id = data.get('organizer_id')
         space_id = data.get('space_id')
+        image_url = data.get('image_url')
 
         if not organizer_id:
             return make_response({"error": "User is not logged in or session has expired"}, 400)
@@ -788,7 +810,8 @@ class Events(Resource):
             description=description,
             date=date,
             organizer_id=organizer_id,
-            space_id=space_id)
+            space_id=space_id, 
+            image_url=image_url)
         db.session.add(event)
         db.session.commit()
         return make_response(event.to_dict())
@@ -883,8 +906,8 @@ api.add_resource(Signup, '/api/signup')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
 api.add_resource(Events, '/api/events')
-api.add_resource(UserSpaces, '/api/users/<int:user_id>/spaces') #tenant space
 api.add_resource(EventByID, '/api/events/<int:event_id>/')
+api.add_resource(SpaceImage, '/api/space-images/<int:space_id>/')
 
 if __name__ == '__main__':
     app.run(port= 5555, debug=True)
