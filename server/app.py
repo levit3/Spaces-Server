@@ -187,7 +187,17 @@ class UserByID(Resource):
         db.session.commit()
         return user.to_dict()
     
-
+class UserSpaces(Resource):
+    def get(self, user_id):
+        # Query to get all spaces associated with the tenant (user_id)
+        spaces = Space.query.filter_by(tenant_id=user_id).all()
+        
+        if spaces:
+            # Convert each space to a dictionary format
+            spaces_list = [space.to_dict() for space in spaces]
+            return jsonify({"spaces": spaces_list})
+        else:
+            return jsonify({"message": "No spaces found for this user"}), 404
 
 
 class Reviews(Resource):
@@ -625,17 +635,18 @@ class SpaceByID(Resource):
         db.session.delete(space)
         db.session.commit()
         return {"message": "Space deleted successfully"}, 200
-
     def patch(self, space_id):
-        space = Space.query.filter_by(id=space_id).first()
+        space = Space.query.get(space_id)
         if space is None:
             return {"message": "Space not found"}, 404
-        data = request.json
-        for attr in data:
-            print(attr, data[attr])
-            setattr(space, attr, data[attr])
+
+        data = request.get_json()
+        for key, value in data.items():
+            if hasattr(space, key):
+                setattr(space, key, value)
+        
         db.session.commit()
-        return space.to_dict(), 200 
+        return space.to_dict(), 200
     
 class Signup(Resource):
     def post(self):
@@ -872,6 +883,7 @@ api.add_resource(Signup, '/api/signup')
 api.add_resource(Login, '/api/login')
 api.add_resource(Logout, '/api/logout')
 api.add_resource(Events, '/api/events')
+api.add_resource(UserSpaces, '/api/users/<int:user_id>/spaces') #tenant space
 api.add_resource(EventByID, '/api/events/<int:event_id>/')
 
 if __name__ == '__main__':

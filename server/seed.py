@@ -980,16 +980,17 @@ if __name__ == '__main__':
                     "https://s3-media0.fl.yelpcdn.com/bphoto/H4a8CF0oQPYUR18ZSKtOJw/o.jpg",
                     ]
         
-        k = 1
-        for i in range(1, len(spaces)):
-          for j in range(1, len(space_images)):
-            while k<5:
-                space_img=SpaceImages(space_id=i, image_url=space_images[j])
-                db.session.add(space_img)
-                db.session.commit()
-                print(SpaceImages.query.filter_by(id=space_img.id).first())
-                k+=1
+        for space in spaces:
+         assigned_images = rc(space_images, 4)  
+         for img_url in assigned_images:
+            space_image = SpaceImages(
+                space_id=space.id,
+                image_url=img_url
+            )
+            db.session.add(space_image)
+            space_images.remove(img_url)  
 
-         
-        print(f"Space image data seeded successfully. Total space images: {len(space_images)}")
-
+        db.session.commit()
+        print(f"Space image data seeded successfully.")
+            
+        
