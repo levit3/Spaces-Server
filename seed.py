@@ -978,6 +978,36 @@ if __name__ == '__main__':
                     "https://s3-media0.fl.yelpcdn.com/bphoto/Zq4Y-NjtnOUU-0hMFmxOhQ/o.jpg",
                     "https://s3-media0.fl.yelpcdn.com/bphoto/b1l6VLYpB-YPdSsR29IhBQ/o.jpg",
                     "https://s3-media0.fl.yelpcdn.com/bphoto/H4a8CF0oQPYUR18ZSKtOJw/o.jpg",
+                    "https://images.pexels.com/photos/37347/office-sitting-room-executive-sitting.jpg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/2883049/pexels-photo-2883049.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/3778619/pexels-photo-3778619.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/273671/pexels-photo-273671.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/416320/pexels-photo-416320.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/380768/pexels-photo-380768.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/2451566/pexels-photo-2451566.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/633269/pexels-photo-633269.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/3778619/pexels-photo-3778619.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/2451616/pexels-photo-2451616.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/2678468/pexels-photo-2678468.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/273671/pexels-photo-273671.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/1181396/pexels-photo-1181396.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/1181395/pexels-photo-1181395.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://images.pexels.com/photos/845451/pexels-photo-845451.jpeg?auto=compress&cs=tinysrgb&w=800",
+                    "https://media.istockphoto.com/id/883792980/photo/white-and-glass-office-interior.jpg?s=1024x1024&w=is&k=20&c=c8hCoRnmNbVhF3v53G8VWepCDEv9GEWbTH1sQaftok4=",
+                    "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8b2ZmaWNlfGVufDB8fDB8fHww",
+                    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8b2ZmaWNlfGVufDB8fDB8fHww",
+                    "https://images.unsplash.com/photo-1531973576160-7125cd663d86?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fG9mZmljZXxlbnwwfHwwfHx8MA%3D%3D",
+                    "https://media.istockphoto.com/id/1591225732/photo/modern-open-plan-office-space-with-tables-office-chairs-creeper-plants-and-manager-room.webp?b=1&s=612x612&w=0&k=20&c=O9QQtaNJQlebyoykA9WEC9RW6eub8GXbHcRrxVPSnX8=",
+                    "https://images.unsplash.com/photo-1655746340587-9d1aaad92b6d?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8b2ZmaWNlJTIwYmFja2dyb3VuZHxlbnwwfHwwfHx8MA%3D%3D",
+                    "https://images.unsplash.com/photo-1716635174919-e6aec2d1c45a?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8OHx8b2ZmaWNlJTIwYmFja2dyb3VuZHxlbnwwfHwwfHx8MA%3D%3D",
+                    "https://images.unsplash.com/photo-1649521712353-e3661b4d42f4?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fG9mZmljZSUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D",
+                    "https://images.unsplash.com/photo-1685602728729-064ce8fbf2f7?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fG9mZmljZSUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D",
+                    "https://images.unsplash.com/photo-1716703373229-b0e43de7dd5c?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTh8fG9mZmljZXxlbnwwfHwwfHx8MA%3D%3D",
+                    "https://media.istockphoto.com/id/1493229333/photo/industrial-style-open-plan-office-interior-with-tables-computers-and-yellow-office-chairs.webp?b=1&s=612x612&w=0&k=20&c=AkJet0CzEuLg23b2GNZW_BnSH1RiyoU-d2X_AdEJ60M=",
+                    "https://images.unsplash.com/photo-1715593949273-09009558300a?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjB8fG9mZmljZSUyMGJhY2tncm91bmR8ZW58MHx8MHx8fDA%3D",
+                    "https://plus.unsplash.com/premium_photo-1670315267667-69a0b41d8384?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8b2ZmaWNlJTIwaW50ZXJpb3J8ZW58MHx8MHx8fDA%3D",
+                    "https://images.unsplash.com/photo-1595846936289-91371459c5bd?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fG9mZmljZSUyMGludGVyaW9yfGVufDB8fDB8fHww",
+                    "https://images.unsplash.com/photo-1715593949345-50d3304cff4b?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MjZ8fG9mZmljZSUyMGludGVyaW9yfGVufDB8fDB8fHww"
                     ]
         spaces = Space.query.limit(20).all()
         for space in spaces:
@@ -997,4 +1027,3 @@ if __name__ == '__main__':
 
         db.session.commit()
         print(f"Space image data seeded successfully. Total remaining space images: {len(space_images)}")
-

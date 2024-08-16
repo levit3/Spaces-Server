@@ -21,6 +21,7 @@ pytest = "*"
 pyjwt = "*"
 requests = "*"
 paypalrestsdk = "*"
+gunicorn = "*"
 
 [dev-packages]
 
