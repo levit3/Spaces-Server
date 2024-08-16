@@ -647,6 +647,28 @@ class SpaceImage(Resource):
         image_urls = [image.image_url for image in images]
         return make_response({"image_urls": image_urls}, 200)
     
+    def post(self, space_id):
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return {"message": "Space not found"}, 404
+
+        data = request.get_json()
+        image_url = data.get('image_url')
+
+        if not image_url:
+            return {"message": "Image URL is required"}, 400
+
+        space_images = []
+        for _ in range(4):
+            space_image = SpaceImage(image_url=image_url, space_id=space_id)
+            db.session.add(space_image)
+            space_images.append(space_image)
+
+        db.session.commit()
+
+        return make_response([image.to_dict() for image in space_images], 201)
+
+    
 class Signup(Resource):
     def post(self):
         request_json = request.get_json()
@@ -776,8 +798,9 @@ class Events(Resource):
         title = data.get('title')
         description = data.get('description')
         date = data.get('date')
-        organizer_id = 92
+        organizer_id = data.get('organizer_id')
         space_id = data.get('space_id')
+        image_url = data.get('image_url')
 
         if not organizer_id:
             return make_response({"error": "User is not logged in or session has expired"}, 400)
@@ -787,7 +810,8 @@ class Events(Resource):
             description=description,
             date=date,
             organizer_id=organizer_id,
-            space_id=space_id)
+            space_id=space_id, 
+            image_url=image_url)
         db.session.add(event)
         db.session.commit()
         return make_response(event.to_dict())

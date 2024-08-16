@@ -88,7 +88,7 @@ class Space(db.Model, SerializerMixin):
 
     user = db.relationship('User', back_populates='spaces')
     reviews = db.relationship('Review', back_populates='space')
-    space_images = db.relationship('SpaceImages', back_populates='space')
+    space_images = db.relationship('SpaceImages', back_populates='space', cascade='all, delete')
     bookings = db.relationship('Booking', back_populates='space')
     events = db.relationship('Event', back_populates='space')
 
@@ -101,7 +101,7 @@ class SpaceImages(db.Model, SerializerMixin):
     serialize_rules = ('-space.space_images',)
 
     id = db.Column(db.Integer, primary_key=True)
-    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id'), nullable=False)
+    space_id = db.Column(db.Integer, db.ForeignKey('spaces.id', ondelete='CASCADE'), nullable=False)
     image_url = db.Column(db.String, nullable=False)
 
     space = db.relationship('Space', back_populates='space_images')
