@@ -220,7 +220,7 @@ class Reviews(Resource):
 class ReviewByID(Resource):
     def get(self, review_id):
         review = Review.query.get_or_404(review_id)
-        return review.to_dict(), 200
+        return make_response(review.to_dict(), 200)
 
     # @token_required  
     def put(self, review_id):
@@ -606,7 +606,7 @@ class SpaceByID(Resource):
         space = Space.query.get(space_id)
         if space is None:
             return {"message": "Space not found"}, 404
-        return space.to_dict(), 200
+        return make_response(space.to_dict(), 200)
 
     def put(self, space_id):
         space = Space.query.filter_by(id=space_id).first()
@@ -646,6 +646,28 @@ class SpaceImage(Resource):
         images = space.space_images
         image_urls = [image.image_url for image in images]
         return make_response({"image_urls": image_urls}, 200)
+    
+    def post(self, space_id):
+        space = Space.query.filter_by(id=space_id).first()
+        if space is None:
+            return {"message": "Space not found"}, 404
+
+        data = request.get_json()
+        image_url = data.get('image_url')
+
+        if not image_url:
+            return {"message": "Image URL is required"}, 400
+
+        space_images = []
+        for _ in range(4):
+            space_image = SpaceImage(image_url=image_url, space_id=space_id)
+            db.session.add(space_image)
+            space_images.append(space_image)
+
+        db.session.commit()
+
+        return make_response([image.to_dict() for image in space_images], 201)
+
     
 class Signup(Resource):
     def post(self):
@@ -776,8 +798,9 @@ class Events(Resource):
         title = data.get('title')
         description = data.get('description')
         date = data.get('date')
-        organizer_id = 92
+        organizer_id = data.get('organizer_id')
         space_id = data.get('space_id')
+        image_url = data.get('image_url')
 
         if not organizer_id:
             return make_response({"error": "User is not logged in or session has expired"}, 400)
@@ -787,7 +810,8 @@ class Events(Resource):
             description=description,
             date=date,
             organizer_id=organizer_id,
-            space_id=space_id)
+            space_id=space_id, 
+            image_url=image_url)
         db.session.add(event)
         db.session.commit()
         return make_response(event.to_dict())
