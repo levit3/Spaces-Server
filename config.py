@@ -34,5 +34,5 @@ api = Api(app)
 bcrypt = Bcrypt(app)
 
 # CORS(app, supports_credentials=True, resources={r"/*": {"origins": "*"}},)
-CORS(app, supports_credentials=True, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, supports_credentials=True, resources={r"/api/*": {"origins": "https://spaces-client.onrender.com"}})
 
