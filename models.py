@@ -75,7 +75,7 @@ class User(SerializerMixin, db.Model):
 class Space(db.Model, SerializerMixin):
     __tablename__ = 'spaces'
 
-    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user','-events.user', '-events.space', '-bookings.payment', '-space_images.space', ]
+    serialize_rules = ['-user.spaces', '-bookings.space', '-reviews.space', '-user.reviews', '-user.bookings', '-reviews.user', '-bookings.user','-events.user', '-events.space', '-bookings.payment', '-space_images.space.space', ]
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String, nullable=False)
