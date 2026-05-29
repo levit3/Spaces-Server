@@ -1,4 +1,4 @@
---upgrade pip setuptools
+
 wheel
 alembic==1.13.2
 aniso8601==9.0.1
